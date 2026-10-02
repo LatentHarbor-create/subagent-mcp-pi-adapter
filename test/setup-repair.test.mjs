@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * setup-repair.test.mjs — Unit tests for the pure wiring-reconcile helpers in
  * dist/setup.js (the self-repair core of `subagent-mcp setup` / `doctor`).
@@ -284,6 +285,16 @@ test("codex toml: stale args -> main block rewritten; .tools subtables preserved
   assert.ok(r.toml.includes("[mcp_servers.subagent-mcp.tools.launch_agent]"),
     "tool-approval subtable preserved");
   assert.ok(r.toml.includes("[mcp_servers.other]"), "unrelated table preserved");
+});
+
+test("codex toml: MCP repair preserves native multi_agent setting", () => {
+  const prefix = `[features]\nmulti_agent = true\n\n`;
+  const stale = `[mcp_servers.subagent-mcp]\ncommand = "node"\nargs = ["C:/stale/dist/index.js"]\n`;
+  const r = reconcileCodexToml(prefix + stale, SERVER);
+  assert.equal(r.status, "repaired");
+  assert.ok(r.toml.startsWith(prefix));
+  assert.match(r.toml, /^multi_agent = true$/m);
+  assert.doesNotMatch(r.toml, /^multi_agent = false$/m);
 });
 
 test("codex toml: empty file -> block created", () => {

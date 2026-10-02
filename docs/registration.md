@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Registering the MCP Server
 
 Retrieval map for per-platform registration of `subagent-mcp` across Claude
@@ -46,7 +47,7 @@ for the full technical specification.
 |---|---|
 | `401 Unauthorized` installing from GitHub Packages | `prerequisites-and-install.md` (GitHub Packages `.npmrc` auth) |
 | CLI not found / not on PATH | `prerequisites-and-install.md` (Prerequisites) |
-| Server registered but no per-turn directive appears | `docs/install/_INDEX.md` (desktop hosts / Gemini inject nothing) |
+| Server registered but no per-turn directive appears | `docs/install/_INDEX.md` (check host support, hook configuration, and Codex Desktop trust review) |
 | Claude plugin load fails with duplicate-hooks error | `docs/install/_INDEX.md` (do not combine plugin hooks with manual settings hooks) |
 | Codex hook never fires | `docs/install/_INDEX.md` (absolute path for `orchestration-codex.js`) |
 

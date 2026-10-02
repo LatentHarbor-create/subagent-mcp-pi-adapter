@@ -1,6 +1,7 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import { join, posix } from "path";
 
-export type SupportedProvider = "claude" | "codex" | "api";
+export type SupportedProvider = "claude" | "codex" | "pi" | "api";
 
 export interface ResolveDeps {
   existsSync(p: string): boolean;
@@ -38,6 +39,20 @@ export function resolveExeFor(
         "claude-code",
         "bin",
         "claude.exe"
+      );
+      if (deps.existsSync(exe)) return exe;
+    } else if (provider === "pi") {
+      // pi ships as an npm shim (pi.cmd / pi.ps1) that re-execs node on the
+      // bundled CLI. Spawn the bundle script through node directly — .cmd
+      // shims cannot be spawned without a shell.
+      const exe = join(
+        prefix,
+        "node_modules",
+        "@earendil-works",
+        "pi-coding-agent",
+        "dist",
+        "bundle",
+        "cli.js"
       );
       if (deps.existsSync(exe)) return exe;
     } else if (provider === "codex") {
@@ -85,6 +100,12 @@ export function resolveExeFor(
       posix.join(prefix, "bin", "codex"),
       "/opt/homebrew/bin/codex",
       "/usr/local/bin/codex",
+    ];
+  } else if (provider === "pi") {
+    candidates = [
+      posix.join(prefix, "bin", "pi"),
+      "/opt/homebrew/bin/pi",
+      "/usr/local/bin/pi",
     ];
   } else {
     throw new Error("api provider dispatch not implemented");

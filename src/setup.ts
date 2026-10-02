@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Modified for the subagent-mcp Pi adapter fork.
 // Setup CLI for the globally-installed subagent-mcp addon.
 // Wires Claude Code CLI and Codex CLI with the MCP server + orchestration-mode hook.
 // Run after: npm install -g @heretyc/subagent-mcp
@@ -44,7 +45,6 @@ import {
 import { initRegistryHasAutoUpdate, readInitRegistry, writeInitRegistry } from "./init-registry.js";
 import {
   reconcileClaudeNativeAgentDeny,
-  reconcileCodexNativeAgentDisable,
   reconcileGeminiSettings,
   geminiNativeAgentPolicyOk,
   geminiNativeAgentPolicyToml,
@@ -1014,15 +1014,6 @@ function wireCodex(): void {
     const r = wireMcpServer(specs.codex);
     if (r.failure) fail("codex", r.failure);
     else describe(r.status, existed ? "config.toml MCP server block" : "config.toml (created) MCP server block");
-    const text = existsSync(specs.codex.configFile) ? readFileSync(specs.codex.configFile, "utf8") : "";
-    const native = reconcileCodexNativeAgentDisable(text);
-    if (native.changed && !DRY_RUN) {
-      mkdirSync(codexDir, { recursive: true });
-      backup(specs.codex.configFile);
-      writeFileSync(specs.codex.configFile, native.toml, "utf8");
-    }
-    describe(native.status, "native-agent static disable");
-    if (native.changed && DRY_RUN) console.log("    (dry-run: not written)");
   } catch (e) {
     fail("codex", `could not write config.toml: ${(e as Error).message}`);
   }
@@ -1304,7 +1295,6 @@ export function verifyWiring(
     const cfg = join(home, ".codex", "config.toml");
     const toml = existsSync(cfg) ? readFileSync(cfg, "utf8") : "";
     const tomlR = reconcileCodexToml(toml, p.server);
-    const nativeR = reconcileCodexNativeAgentDisable(toml);
     const hj = readJson(join(home, ".codex", "hooks.json"), { hooks: {} });
     const hkR = reconcileCodexHooks(hj, `node "${p.codexHook}"`);
     let registered = false;
@@ -1321,13 +1311,6 @@ export function verifyWiring(
       label: "codex: config.toml MCP server block",
       ok: registered,
       detail,
-    });
-    results.push({
-      label: "codex: native-agent static disable",
-      ok: nativeR.status === "ok",
-      detail: nativeR.status === "ok"
-        ? "features.multi_agent=false; no repo-supported native-agent hook guard exists"
-        : "missing - run: subagent-mcp setup",
     });
     const allOk = Object.values(hkR.statuses).every((s) => s === "ok");
     results.push({

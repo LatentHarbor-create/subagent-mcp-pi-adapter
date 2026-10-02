@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * Handler param-presence validation tests for launch_agent.
  *
@@ -300,7 +301,7 @@ test("explicit mismatch: codex + sonnet -> Codex constraint message", () => {
 // silently failed over to a CLI provider (the live regression).
 // ---------------------------------------------------------------------------
 const API_OVERRIDE_ERROR =
-  "Error: provider override must be claude or codex. Got: api. " +
+  "Error: provider override must be claude, codex, or pi. Got: api. " +
   "The api provider is internal auto-slot routing only and cannot be selected explicitly.\n" +
   AUTO_HINT;
 

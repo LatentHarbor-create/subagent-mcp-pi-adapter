@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 <!-- Part of orchestration-directive-architecture (split). Retrieval map: ../orchestration-directive-architecture.md -->
 
 ## section 14 : R-ID Derivation Map (D21)
@@ -16,13 +17,13 @@ mapping without fragment `.txt` files.
 | **R-ON-STRICT** | section 3 allowed-tools allowlist; no inline-by-right; one-time exception protocol |
 | **R-SKILL-READ** | section 3 ON-only direct read of applicable `SKILL.md` + explicitly required same-folder files; no task action; approval only for expanded owner scope |
 | **R-READ-LADDER** | section 3.1 poll_agent tail → ≤100-line summarizer → user reads; scratch-file PATH handoff (A2) |
-| **R-NOHOOK** | section 5 UNKNOWN=tag-absence → warn + explain + one-time opt-out → fail-safe ON |
+| **R-NOHOOK** | section 5 UNKNOWN=tag-absence → notify + default OFF |
 | **R-EXEMPT** | section 6 first-line `<this is a request from a parent process>` skips the regime; launch_agent upsert |
 | **R-DROPOUT** | section 7 HALT-until-restored; only exit = explicit task abandonment |
 | **R-MARKERS** | section 8 schema=5 markers + union MIGRATE_RE + duplicate collapse |
 | **R-NO5CALL** | section 4 requires the permanent grep gate to find no 5-call rule |
 | **R-START-OFF** | section 4 keyed sessions default OFF without setup-time state writes; keyless/undetectable metering fails safe ON |
-| **R-LATCH-15** | section 4/10 15% latch + a planning stop of AT LEAST 4 open questions asked with the structured question tool (or natural prose where none exists), turned into the session's goal context; explicit session-keyed enabled:false (2h TTL) beats latch/fail-safe; explicit enabled:true may re-enable mid-session; unaffected by `contextCoaching` |
+| **R-LATCH-15** | section 4/10 15% latch + a planning stop of AT LEAST 4 open questions asked with the structured question tool (or natural prose where none exists), turned into the session's goal context; 15% coaching runs only while explicitly ON; explicit enabled:true may re-enable mid-session; unaffected by `contextCoaching` |
 | **R-MODEL-SMART** | model selection unset defaults smart; server auto-picks and rejects selectors outside an explicitly user-approved override window |
 | **R-HANDOFF-20** | section 10/13 goal-context unlock at **20%** utilization: unlock handoff-write/read/clear; write gated >=20% with readable metering; the 20% constant is FIXED and never configurable; 4000/8000-char limits; 10-question pre-write and EXACTLY-4-question pre-read coaching (voluntary) |
 | **R-HANDOFF-80** | section 4/10 MANDATORY handoff threshold at **HANDOFF_REQUIRED_THRESHOLD_PCT** (80%): derive `write_required` when `used_percentage >= 80` and no automatically eligible record exists; eligibility requires `version = 2`, `lifecycle = "prepared"`, non-empty `generation`, and `created_by_session` matching the current session; inject the mandatory handoff-write directive (directive-only, no tool gate), regardless of `contextCoaching`; `CODEX_AUTOCOMPACT_PCT=90` and `H=CODEX_AUTOCOMPACT_PCT-10=80` are fixed code constants; compaction requires an adjacent-sample >= `COMPACTION_DROP_THRESHOLD_PCT` (10) drop from a previous sample >= 80 plus fresh proof from an implemented adapter (Claude: newest main-chain system `compact_boundary`, valid only when that exact boundary is auto-triggered with a canonical top-level UUID, so newer manual/invalid boundaries mask older valid ones; Codex: fresh compacted window id/number, with no auto/manual cause exposed); unchanged proof is rejected as replay; detection injects the one-turn mandatory `handoff-read`, followed after a successful read by exactly four structured confirmation questions; `markRead` advances any readable version-2 record to `working`, while other readable versions retain their schema |
@@ -36,7 +37,7 @@ mapping without fragment `.txt` files.
 | MCP `instructions` (A3) | R-TAG, R-SUPREMACY, R-SOLE-CHANNEL, R-ON-STRICT, R-SKILL-READ, R-READ-LADDER, R-START-OFF, R-LATCH-15, R-MODEL-SMART, R-NOHOOK, R-EXEMPT, R-DROPOUT, R-NO5CALL | A2 semantics (compressed) |
 | INIT_BLOCK (A1) | R-TAG, R-SUPREMACY, R-SOLE-CHANNEL, R-ON-STRICT, R-SKILL-READ, R-READ-LADDER, R-START-OFF, R-LATCH-15, R-MODEL-SMART, R-HOOK-COACH-DOCTRINE, R-NOHOOK, R-EXEMPT, R-DROPOUT | **A2** (D25) + **A4** (D7) |
 | `orchestration-{claude,codex}.md` | R-EXEMPT, R-ON-STRICT, R-READ-LADDER, R-SUPREMACY, R-SOLE-CHANNEL, R-DROPOUT | : |
-| `carryover-{claude,codex}.md` | R-EXEMPT, R-SUPREMACY, R-LATCH-15 (compat carrier for a current-session ON triggered by an inherited enable OR a 15% latch record; one-time remain-enabled confirmation) | : |
+| `carryover-{claude,codex}.md` | R-EXEMPT, R-SUPREMACY, R-LATCH-15 (compat carrier for a current-session ON triggered by explicit enable; one-time remain-enabled confirmation) | : |
 | `reminder-on.md` | R-EXEMPT, R-ON-STRICT, R-READ-LADDER, R-SUPREMACY | : |
 | `reminder-off-{claude,codex}.md` | R-EXEMPT, R-START-OFF | : |
 | `short-on.md` | R-EXEMPT, R-ON-STRICT (one-line) | : |
@@ -58,4 +59,3 @@ mapping without fragment `.txt` files.
 `src/` and `directives/`.
 
 ---
-

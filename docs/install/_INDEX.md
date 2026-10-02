@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Install Guide Index
 
 Copy-pasteable install directions for getting the **MCP server** and each
@@ -57,20 +58,22 @@ Requires **Node.js >= 20**. After the build, confirm these exist:
 | Claude Code (CLI) | yes | [claude-code-cli.md](claude-code-cli.md) |
 | Claude Desktop | **no** (MCP-only) | [claude-desktop.md](claude-desktop.md) |
 | Codex CLI | yes | [codex-cli.md](codex-cli.md) |
-| Codex Desktop / IDE | **no** (MCP-only) | [codex-desktop.md](codex-desktop.md) |
+| Codex Desktop | yes when configured and trusted | [codex-desktop.md](codex-desktop.md) |
+| Codex IDE extension | host support must be verified | [codex-desktop.md](codex-desktop.md) |
 | Gemini CLI | **no** (MCP-only) | [gemini-cli.md](gemini-cli.md) |
 
-Desktop hosts and Gemini CLI have no repo-documented `UserPromptSubmit` hook
-host, so the `orchestration-mode` tool still flips the marker but **nothing is
-injected per turn**. This is documented degradation, not a bug : use Claude Code
-CLI or Codex CLI for the full behavior.
+Codex Desktop uses user hooks when configured and trusted. If hooks are absent
+or untrusted, the `orchestration-mode` tool can still change session state,
+but no tag is injected and instruction fallback defaults to OFF. Claude
+Desktop and Gemini CLI have no repo-documented `UserPromptSubmit` hook host.
 
 ## Host capability matrix
 
 | Host | Toggle works | Per-turn injection | Native-agent suppression |
 |---|---|---|---|
 | Claude Code CLI | yes | yes (`UserPromptSubmit` + `PreToolUse`) | settings deny `Agent` + PreToolUse hook |
-| Codex CLI | yes | yes (bundled `SessionStart` + `UserPromptSubmit`) | `[features] multi_agent=false` |
+| Codex CLI | yes | yes (bundled `SessionStart` + `UserPromptSubmit`) | independent of subagent-mcp |
 | Claude Desktop | yes | **no** : no hook host | none documented |
-| Codex Desktop / IDE | yes | **no** : no hook host | none documented |
-| Gemini CLI | yes | **no** : no hook injection; UNKNOWN defaults to ON | settings disable + policy TOML |
+| Codex Desktop | yes | yes when both hooks are trusted | independent of subagent-mcp |
+| Codex IDE extension | yes | verify host support | independent of subagent-mcp |
+| Gemini CLI | yes | **no** : no hook injection; UNKNOWN defaults to OFF | settings disable + policy TOML |

@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { mapModel, resolveEffort, buildCommand } from "../dist/effort.js";
@@ -164,6 +165,46 @@ test("(claude,opus,ultracode) uses interactive SDK-compatible args", () => {
   const result = buildCommand("claude", "opus", "ultracode", "test", process.cwd());
   assertInteractiveClaudeArgs(result.args, "ultracode");
   unlinkSync(result.ucSettingsPath);
+});
+
+// 14. Pi effort mapping (glm-5.3-flash selectable thinking levels: low/high/max).
+// max must survive verbatim — never clamped to xhigh, which the catalog lacks.
+test("(pi,pi-balanced,max) resolves thinking=max", () => {
+  assert.deepEqual(resolveEffort("pi", "pi-balanced", "max"), { kind: "flag", value: "max" });
+});
+test("(pi,pi-cheap,max) resolves thinking=max", () => {
+  assert.deepEqual(resolveEffort("pi", "pi-cheap", "max"), { kind: "flag", value: "max" });
+});
+test("(pi,pi-balanced,high) resolves thinking=high (no drift)", () => {
+  assert.deepEqual(resolveEffort("pi", "pi-balanced", "high"), { kind: "flag", value: "high" });
+});
+test("(pi,pi-balanced,medium) maps up to high (catalog has no medium tier)", () => {
+  assert.deepEqual(resolveEffort("pi", "pi-balanced", "medium"), { kind: "flag", value: "high" });
+});
+test("(pi,pi-balanced,xhigh) maps up to max (catalog has no xhigh)", () => {
+  assert.deepEqual(resolveEffort("pi", "pi-balanced", "xhigh"), { kind: "flag", value: "max" });
+});
+test("(pi,pi-balanced,ultracode) is explicitly rejected (upstream Opus-4.8+ guard)", () => {
+  assert.throws(
+    () => resolveEffort("pi", "pi-balanced", "ultracode"),
+    /ultracode effort is only available on Opus 4\.8\+/
+  );
+});
+
+// 15. Pi buildCommand: the actual command carries --thinking max for effort=max
+//     and never emits the catalog-unsupported xhigh.
+test("(pi,pi-balanced,max) buildCommand emits --thinking max", () => {
+  const { args } = buildCommand("pi", "pi-balanced", "max", "test", process.cwd());
+  const ti = args.indexOf("--thinking");
+  assert.ok(ti >= 0, "pi command must carry --thinking");
+  assert.equal(args[ti + 1], "max");
+  assert.ok(!args.includes("xhigh"), "pi must never emit thinking=xhigh");
+  assert.ok(args.includes("--mode") && args.includes("rpc"), "pi stays on rpc transport");
+});
+test("(pi,pi-balanced,high) buildCommand emits --thinking high", () => {
+  const { args } = buildCommand("pi", "pi-balanced", "high", "test", process.cwd());
+  const ti = args.indexOf("--thinking");
+  assert.equal(args[ti + 1], "high");
 });
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);

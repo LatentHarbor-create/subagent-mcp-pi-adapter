@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * Unit tests for src/ruleset.ts (compiled to dist/ruleset.js).
  *
@@ -11,7 +12,8 @@
  */
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -194,15 +196,16 @@ await test("RULESET_HARD_FAIL_MSG is byte-exact (verbatim owner string, no hints
 // 5. Scaffold drift guard.
 //    WHY: dist/advanced-ruleset.py and the embedded RULESET_SCAFFOLD string
 //    are both mechanically derived from src/advanced-ruleset.py per build;
-//    this guard makes any manual divergence fail loudly. The scaffold must
-//    also ship inert (LOAD_RULES = False).
+//    this guard makes any manual divergence fail loudly. Since the owner
+//    directive 2026-09-28 the scaffold ships ACTIVE (LOAD_RULES = True —
+//    MCP launches are limited to fixed Pi; see src/advanced-ruleset.py).
 // ---------------------------------------------------------------------------
-await test("scaffold drift guard: src/advanced-ruleset.py === RULESET_SCAFFOLD; ships LOAD_RULES = False", () => {
+await test("scaffold drift guard: src/advanced-ruleset.py === RULESET_SCAFFOLD; ships LOAD_RULES = True (owner-enabled)", () => {
   const canonical = readFileSync(join(repoRoot, "src", "advanced-ruleset.py"), "utf8");
   assert.equal(RULESET_SCAFFOLD, canonical,
     "embedded scaffold string must be byte-identical to the canonical src/advanced-ruleset.py");
-  assert.ok(RULESET_SCAFFOLD.includes("LOAD_RULES = False"),
-    "the shipped scaffold must be inert by default (load-rules false)");
+  assert.ok(RULESET_SCAFFOLD.includes("LOAD_RULES = True"),
+    "the shipped scaffold must be owner-enabled (fixed Pi policy active)");
 });
 
 // ---------------------------------------------------------------------------
@@ -234,6 +237,178 @@ const PAYLOAD = {
     effort: null,
   },
 };
+
+function findPython() {
+  for (const candidate of interpreterCandidates(process.env, process.platform)) {
+    const probe = spawnSync(candidate, ["-c", "print('ok')"], { encoding: "utf8", windowsHide: true });
+    if (probe.status === 0 && probe.stdout.trim() === "ok") return candidate;
+  }
+  return null;
+}
+
+const pythonForPolicy = findPython();
+const policyHarness = `
+import json, os, runpy, sys
+script, audit_root = sys.argv[1], sys.argv[2]
+ns = runpy.run_path(script)
+os.environ["SUBAGENT_PI_BLOCKED_ROOTS"] = json.dumps([audit_root])
+payload = json.load(sys.stdin)
+json.dump(ns["apply_rules"](payload["candidates"], payload["context"]), sys.stdout, ensure_ascii=False)
+`;
+
+function runPolicyRoute(python, payload, auditRoot) {
+  const result = spawnSync(
+    python,
+    ["-c", policyHarness, join(repoRoot, "src", "advanced-ruleset.py"), auditRoot],
+    {
+      input: JSON.stringify(payload),
+      encoding: "utf8",
+      windowsHide: true,
+      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+    }
+  );
+  assert.equal(result.status, 0, `policy harness failed: stderr=${result.stderr}`);
+  return JSON.parse(result.stdout);
+}
+
+if (pythonForPolicy === null) {
+  console.log("  FAIL: advanced-ruleset owner policy tests require a Python interpreter");
+  failed++;
+} else {
+  const policyDir = mkdtempSync(join(tmpdir(), "subagent-ruleset-policy-"));
+  const auditRoot = join(policyDir, "audit-root");
+  const auditChild = join(auditRoot, "case");
+  const nonAudit = join(policyDir, "ordinary");
+  writeFileSync(join(policyDir, ".keep"), "");
+  mkdirSync(auditChild, { recursive: true });
+  mkdirSync(nonAudit, { recursive: true });
+
+  await test("advanced-ruleset owner policy: ordinary auto routes only to fixed Pi", () => {
+    const out = runPolicyRoute(pythonForPolicy, {
+      candidates: [
+        { provider: "claude", model: "sonnet", effort: "medium", rank: 1 },
+        { provider: "codex", model: "gpt-5.5", effort: "xhigh", rank: 2 },
+        { provider: "api", model: "api-model", effort: "medium", rank: 3 },
+        { provider: "codex", model: "gpt-5.5", effort: "medium", rank: 4 },
+      ],
+      context: {
+        task_category: "coding",
+        cwd: nonAudit,
+        selection_mode: "auto",
+        provider: null,
+        model: null,
+        effort: null,
+      },
+    }, auditRoot);
+    assert.deepEqual(out, [{ provider: "pi", model: "pi-balanced", effort: "max" }]);
+  });
+
+  await test("advanced-ruleset owner policy: audit auto and explicit Pi veto the MCP launch", () => {
+    const auditAuto = runPolicyRoute(pythonForPolicy, {
+      candidates: [
+        { provider: "claude", model: "sonnet", effort: "medium", rank: 1 },
+        { provider: "codex", model: "gpt-5.5", effort: "xhigh", rank: 2 },
+      ],
+      context: {
+        task_category: "coding",
+        cwd: auditChild,
+        selection_mode: "auto",
+        provider: null,
+        model: null,
+        effort: null,
+      },
+    }, auditRoot);
+    assert.deepEqual(auditAuto, [], "audit auto must not route project data to Pi or another MCP provider");
+
+    const auditExplicit = runPolicyRoute(pythonForPolicy, {
+      candidates: [
+        { provider: "pi", model: "pi-balanced", effort: "max", rank: 1 },
+      ],
+      context: {
+        task_category: "coding",
+        cwd: auditChild,
+        selection_mode: "explicit",
+        provider: "pi",
+        model: "pi-balanced",
+        effort: "max",
+      },
+    }, auditRoot);
+    assert.deepEqual(auditExplicit, [], "audit explicit Pi must be vetoed by filtering to zero candidates");
+  });
+
+  await test("advanced-ruleset owner policy: only fixed Pi is allowed explicitly", () => {
+    const explicitPi = runPolicyRoute(pythonForPolicy, {
+      candidates: [
+        { provider: "pi", model: "pi-balanced", effort: "max", rank: 1 },
+      ],
+      context: {
+        task_category: "coding",
+        cwd: nonAudit,
+        selection_mode: "explicit",
+        provider: "pi",
+        model: "pi-balanced",
+        effort: "max",
+      },
+    }, auditRoot);
+    assert.deepEqual(explicitPi, [
+      { provider: "pi", model: "pi-balanced", effort: "max", rank: 1 },
+    ]);
+
+    for (const candidate of [
+      { provider: "pi", model: "pi-cheap", effort: "high" },
+      { provider: "codex", model: "gpt-5.5", effort: "xhigh" },
+      { provider: "api", model: "api-model", effort: "medium" },
+      { provider: "claude", model: "sonnet", effort: "medium" },
+    ]) {
+      const out = runPolicyRoute(pythonForPolicy, {
+        candidates: [candidate],
+        context: {
+          cwd: nonAudit,
+          selection_mode: "explicit",
+          provider: candidate.provider,
+          model: candidate.model,
+          effort: candidate.effort,
+        },
+      }, auditRoot);
+      assert.deepEqual(out, [], `explicit ${candidate.provider}/${candidate.model} must be vetoed`);
+    }
+
+    const codexWithPiFallback = runPolicyRoute(pythonForPolicy, {
+      candidates: [
+        { provider: "codex", model: "gpt-5.5", effort: "xhigh" },
+        { provider: "pi", model: "pi-balanced", effort: "max" },
+      ],
+      context: { cwd: nonAudit, selection_mode: "provider", provider: "codex" },
+    }, auditRoot);
+    assert.deepEqual(codexWithPiFallback, [], "an explicit Codex MCP request must be vetoed, not silently switched to Pi");
+
+    const piProviderOnly = runPolicyRoute(pythonForPolicy, {
+      candidates: [{ provider: "pi", model: "pi-cheap", effort: "high" }],
+      context: { cwd: nonAudit, selection_mode: "provider", provider: "pi" },
+    }, auditRoot);
+    assert.deepEqual(piProviderOnly, [{ provider: "pi", model: "pi-balanced", effort: "max" }]);
+  });
+
+  await test("advanced-ruleset owner policy: invalid cwd vetoes all candidates", () => {
+
+    const invalidCwdAuto = runPolicyRoute(pythonForPolicy, {
+      candidates: [
+        { provider: "claude", model: "sonnet", effort: "medium", rank: 1 },
+        { provider: "codex", model: "gpt-5.5", effort: "xhigh", rank: 2 },
+      ],
+      context: {
+        task_category: "coding",
+        cwd: join(policyDir, "missing"),
+        selection_mode: "auto",
+        provider: null,
+        model: null,
+        effort: null,
+      },
+    }, auditRoot);
+    assert.deepEqual(invalidCwdAuto, []);
+  });
+  rmSync(policyDir, { recursive: true, force: true });
+}
 
 // ---------------------------------------------------------------------------
 // 6. Gate: env-check SUCCESS latches for the process lifetime.

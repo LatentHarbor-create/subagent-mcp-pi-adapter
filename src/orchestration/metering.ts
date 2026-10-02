@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import {
   existsSync,
   mkdirSync,
@@ -146,9 +147,14 @@ interface ContextWindowTable {
   schema_version: 1;
   family_defaults?: {
     claude?: ContextWindowEntry;
+    pi?: ContextWindowEntry;
   };
   claude: Record<string, ContextWindowEntry>;
   codex: Record<string, ContextWindowEntry>;
+  /** Pi RPC family (pi-cheap / pi-balanced). Read by metering when the driver
+   *  harness is extended; entries are inert until a pi harness resolution path
+   *  consumes them (kept in lockstep with scripts/validate_context_windows.mjs). */
+  pi?: Record<string, ContextWindowEntry>;
 }
 
 export interface WindowResolution {

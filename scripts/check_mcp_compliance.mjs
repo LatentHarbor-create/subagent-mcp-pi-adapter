@@ -1,4 +1,6 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { stripDirectiveModificationNotice } from "../dist/orchestration/directive-text.js";
 
 // Single source of truth for vendor-metadata limits. Extracts the server
 // `instructions` string, every MCP tool name + description from src/index.ts,
@@ -196,7 +198,7 @@ function main() {
 
   // C4 + C5 — directive assets.
   const dirFiles = readdirSync(directivesDir).filter((f) => f.endsWith(".md"));
-  const read = (f) => readFileSync(new URL(f, directivesDir), "utf8");
+  const read = (f) => stripDirectiveModificationNotice(readFileSync(new URL(f, directivesDir), "utf8"));
   for (const f of dirFiles) {
     const content = read(f);
     const len = content.length; // chars (additionalContext cap is char-based)

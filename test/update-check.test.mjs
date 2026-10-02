@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -81,6 +82,28 @@ async function runCheck({
     rmSync(dir, { recursive: true, force: true });
   }
 }
+
+test("private packages never fetch registry metadata or start an updater", async () => {
+  clearUpdateNoticeState();
+  const { dir, path } = tempConfig();
+  let requests = 0;
+  let launches = 0;
+  try {
+    await checkForNpmUpdate({
+      configPath: path,
+      env: {},
+      packageInfo: () => ({ name: "subagent-mcp-pi-adapter", version: "3.2.3", private: true }),
+      fetch: async () => { requests++; throw new Error("Registry must not be reached"); },
+      spawn: () => { launches++; throw new Error("Updater must not be started"); },
+    });
+    assert.equal(requests, 0);
+    assert.equal(launches, 0);
+    assert.equal(readUpdateCheckStatus(), undefined);
+    assert.equal(readPendingUpdateNotice(), undefined);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test("numeric version compare uses x.y.z ordering", () => {
   assert.equal(compareNumericVersions("2.12.1", "2.12.2"), -1);

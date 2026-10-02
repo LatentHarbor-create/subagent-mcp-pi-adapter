@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import {
   existsSync,
   readdirSync,
@@ -74,6 +75,8 @@ export function sweepHookState(
       } else if (/^(ctx|sl)-[0-9a-f]{16}\.json$/i.test(name)) {
         if (staleByRecordOrMtime(path, now)) deleteBestEffort(path);
       } else if (/^sl-cwd-[0-9a-f]{16}\.json$/i.test(name)) {
+        if (staleByRecordOrMtime(path, now)) deleteBestEffort(path);
+      } else if (/^orch-pimode-[0-9a-f]{16}\.json$/i.test(name) || /^orch-piasked-[0-9a-f]{16}\.json$/i.test(name)) {
         if (staleByRecordOrMtime(path, now)) deleteBestEffort(path);
       }
     }

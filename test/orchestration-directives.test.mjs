@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * orchestration-directives.test.mjs — Content assertions for the repo-root
  * directive assets (directives/*.md) and their current schema contract.
@@ -22,20 +23,22 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { stripDirectiveModificationNotice } from "../dist/orchestration/directive-text.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const directivesDir = join(__dirname, "..", "directives");
 const srcDir = join(__dirname, "..", "src");
+const readAsset = (name) => stripDirectiveModificationNotice(readFileSync(join(directivesDir, name), "utf8"));
 
-const claude = readFileSync(join(directivesDir, "orchestration-claude.md"), "utf8");
-const codex = readFileSync(join(directivesDir, "orchestration-codex.md"), "utf8");
-const carryoverClaude = readFileSync(join(directivesDir, "carryover-claude.md"), "utf8");
-const carryoverCodex = readFileSync(join(directivesDir, "carryover-codex.md"), "utf8");
-const shortOn = readFileSync(join(directivesDir, "short-on.md"), "utf8");
-const shortOff = readFileSync(join(directivesDir, "short-off.md"), "utf8");
-const reminderOn = readFileSync(join(directivesDir, "reminder-on.md"), "utf8");
-const reminderOffClaude = readFileSync(join(directivesDir, "reminder-off-claude.md"), "utf8");
-const reminderOffCodex = readFileSync(join(directivesDir, "reminder-off-codex.md"), "utf8");
+const claude = readAsset("orchestration-claude.md");
+const codex = readAsset("orchestration-codex.md");
+const carryoverClaude = readAsset("carryover-claude.md");
+const carryoverCodex = readAsset("carryover-codex.md");
+const shortOn = readAsset("short-on.md");
+const shortOff = readAsset("short-off.md");
+const reminderOn = readAsset("reminder-on.md");
+const reminderOffClaude = readAsset("reminder-off-claude.md");
+const reminderOffCodex = readAsset("reminder-off-codex.md");
 const initSource = readFileSync(join(srcDir, "init.ts"), "utf8");
 const indexSource = readFileSync(join(srcDir, "index.ts"), "utf8");
 
@@ -85,7 +88,7 @@ function sourceRange(source, startMarker, endMarker, label) {
 
 const DIRECTIVE_FILES = readdirSync(directivesDir)
   .filter((entry) => entry.endsWith(".md"))
-  .map((entry) => [entry, readFileSync(join(directivesDir, entry), "utf8")]);
+  .map((entry) => [entry, readAsset(entry)]);
 
 const CANONICAL_INSTRUCTION_SOURCES = [
   ["src/init.ts INIT_BLOCK", sourceRange(initSource, "export const INIT_BLOCK =", "function detectEol", "INIT_BLOCK")],
@@ -204,13 +207,13 @@ test("every directive carries the first-line parent-process exemption", () => {
 // ---------------------------------------------------------------------------
 // OFF reminders encode the 15% latch and contain no 5-call cue.
 // ---------------------------------------------------------------------------
-test("OFF reminders mention the 15% latch doctrine", () => {
+test("OFF reminders preserve explicit-enable doctrine", () => {
   for (const [name, body] of [
     ["reminder-off-claude", reminderOffClaude],
     ["reminder-off-codex", reminderOffCodex],
   ]) {
-    assert.match(body, /15%|latch/i,
-      `${name} must state the 15% latch doctrine`);
+    assert.match(body, /explicit|remain OFF|stays OFF/i,
+      `${name} must state that orchestration remains OFF without explicit enable`);
     assert.match(body, /subagent-mcp/i,
       `${name} must preserve the subagent-mcp routing cue while OFF`);
   }
@@ -229,11 +232,11 @@ test("OFF reminders mention the 15% latch doctrine", () => {
 // A5.6 spec fences. A literal pin catches wording that remains intent-valid
 // while contradicting the canonical spec.
 const LATCH_COACHING_LINE =
-  "15% LATCH COACHING. Stop before continuing and ask AT LEAST 4 open planning questions using the structured question tool, or natural prose if not available.";
+  "15% PLANNING COACHING FOR AN EXPLICITLY ENABLED SESSION. Stop before continuing and ask AT LEAST 4 open planning questions using the structured question tool, or natural prose if not available.";
 
 test("latch coaching is one verbatim harness-neutral string in both latch directives", () => {
-  const latchClaude = readFileSync(join(directivesDir, "latch-claude.md"), "utf8");
-  const latchCodex = readFileSync(join(directivesDir, "latch-codex.md"), "utf8");
+  const latchClaude = readAsset("latch-claude.md");
+  const latchCodex = readAsset("latch-codex.md");
 
   const claudeLatchLine = latchClaude.split("\n")[0];
   const codexLatchLine = latchCodex.split("\n")[0];
@@ -289,7 +292,7 @@ test("latch directives are byte-identical to their A5.5/A5.6 spec fences", () =>
     ["### A5.5", "latch-claude.md"],
     ["### A5.6", "latch-codex.md"],
   ]) {
-    const shipped = normalizeEol(readFileSync(join(directivesDir, file), "utf8")).replace(/\n$/, "");
+    const shipped = normalizeEol(readAsset(file)).replace(/\n$/, "");
     assert.equal(shipped, fenceAfter(heading),
       `directives/${file} must be byte-identical to its ${heading} spec fence`);
     assert.ok(fenceAfter(heading).startsWith(LATCH_COACHING_LINE),
@@ -325,15 +328,15 @@ test("handoff-lifecycle directives are byte-identical to their A5.3/A5.4/A5.16 s
     ["### A5.4", "handoff-codex.md"],
     ["### A5.16", "session-handoff-required.md"],
   ]) {
-    const shipped = normalizeEol(readFileSync(join(directivesDir, file), "utf8")).replace(/\n$/, "");
+    const shipped = normalizeEol(readAsset(file)).replace(/\n$/, "");
     assert.equal(shipped, fenceAfter(heading),
       `directives/${file} must be byte-identical to its ${heading} spec fence`);
   }
 });
 
 test("handoff directives are lifecycle-state driven with the voluntary 20% unlock and no wind-down", () => {
-  const handoffClaude = readFileSync(join(directivesDir, "handoff-claude.md"), "utf8");
-  const handoffCodex = readFileSync(join(directivesDir, "handoff-codex.md"), "utf8");
+  const handoffClaude = readAsset("handoff-claude.md");
+  const handoffCodex = readAsset("handoff-codex.md");
 
   for (const [name, body] of [["handoff-claude", handoffClaude], ["handoff-codex", handoffCodex]]) {
     // The two mandatory lifecycle transitions the directive acts on.

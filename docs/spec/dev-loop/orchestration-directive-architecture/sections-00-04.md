@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 <!-- Part of orchestration-directive-architecture (split). Retrieval map: ../orchestration-directive-architecture.md -->
 
 # Orchestration Directive Architecture (schema=5)
@@ -130,11 +131,12 @@ The canonical wording is Appendix **A4**, byte-identical across CLAUDE.md / AGEN
 
 When ON you are an **ORCHESTRATOR**.
 
-- **ALLOWED TOOLS : exhaustive:** ONLY the structured-question tool (AskUserQuestion/request-user-input), subagent-mcp, and /workflows. **Inline-by-right does not exist;** every task step runs in a sub-agent (D2).
-- **SOLE CHANNEL IN BOTH STATES:** ON or OFF, EVERY launch uses `launch_agent`;
-  harness Task/Agent/collaboration, shell agents, and wrappers are forbidden.
-  Native paths fragment permissions/instruction compliance and duplicate
-  context/token cost; the sole channel keeps bounded handoffs consistent.
+- **MCP-managed tools:** structured-question tool, subagent-mcp, and /workflows.
+  MCP-managed work remains delegated. Codex native subagent tools remain
+  independently available in both states under Codex, user, and project rules.
+- **CHANNEL BOUNDARY IN BOTH STATES:** `launch_agent` governs MCP-launched
+  agents only. MCP settings, hooks, routing, and worktree rules do not gate or
+  redirect Codex native subagents.
 - **Applicable-skill read:** ON may directly read only that skill's `SKILL.md`
   and explicitly required same-folder files. Reads grant no task action; ask
   only if instructions expand owner scope. Actions remain delegated.
@@ -148,14 +150,15 @@ When ON you are an **ORCHESTRATOR**.
 Appendix **A2** is byte-identical in A1 and the `src/index.ts` canonical
 comment; A3 carries its binding semantics compressed. Summary:
 
-1. `poll_agent` **TAIL** is the only normal read channel.
+1. `poll_agent` **TAIL** is the normal read channel for MCP-launched agents.
 2. If the tail is insufficient → dispatch **ONE** sub-agent returning a single
    **≤100-line** summary, **trusted as-is** with no separate verification (D29).
 3. Anything larger → the **USER** reads the document directly.
 
-Large inter-agent data (D14): the orchestrator assigns **scratch-file PATHS**
+Large MCP inter-agent data (D14): the orchestrator assigns **scratch-file PATHS**
 (`%TEMP%` Windows / `/tmp` POSIX) in prompts; the producer writes, the consumer
-reads; the orchestrator **NEVER** reads those files.
+reads; the orchestrator **NEVER** reads those files. Codex native subagents use
+Codex's own output and coordination channel.
 
 ---
 

@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * Execution-layer tests for dist/ruleset.js — real child-process plumbing,
  * no MCP server.
@@ -253,10 +254,10 @@ const realPython = findRealPython();
 if (realPython === null) {
   console.log("  SKIP: real-python smoke test — no python interpreter found on PATH (install py/python3/python to cover it)");
 } else {
-  await test(`real-python smoke (${realPython}): shipped scaffold env-checks ready + load-rules false`, async () => {
+  await test(`real-python smoke (${realPython}): shipped scaffold env-checks ready + owner-enabled`, async () => {
     const gate = createRulesetGate({ scriptPath, env: { SUBAGENT_RULESET_PYTHON: realPython } });
-    assert.deepEqual(await gate.ensureReady(), { ok: true, active: false },
-      "the shipped scaffold must be ready (stdlib-only) and inert (LOAD_RULES = False) under a real python");
+    assert.deepEqual(await gate.ensureReady(), { ok: true, active: true },
+      "the shipped scaffold must be ready and owner-enabled (LOAD_RULES = True, claude filter active)");
   });
 }
 

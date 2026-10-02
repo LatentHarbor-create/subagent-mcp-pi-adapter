@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Modified for the subagent-mcp Pi adapter fork.
 
 import {
   existsSync,
@@ -34,7 +35,6 @@ import {
   CLAUDE_NATIVE_AGENT_DENY,
   CLAUDE_NATIVE_AGENT_DENY_LEGACY,
   GEMINI_NATIVE_AGENT_POLICY,
-  codexNativeAgentDisableOk,
   ensureNativeAgentSuppression,
   geminiNativeAgentPolicyOk,
 } from "./native-suppression.js";
@@ -566,15 +566,8 @@ export async function checkNativeAgentSuppression(opts: DoctorOptions = {}): Pro
     }
   }
 
-  const codex = join(home, ".codex", "config.toml");
-  if (existsSync(codex)) {
-    if (codexNativeAgentDisableOk(readFileSync(codex, "utf8"))) {
-      parts.push("codex static disable ok; no repo-supported native-agent hook/policy guard");
-    } else {
-      ok = false;
-      parts.push("codex missing [features] multi_agent=false");
-    }
-  }
+  // Codex native subagents are outside this check: no MCP option may require
+  // or repair the host's features.multi_agent setting.
 
   const gemini = readJson(join(home, ".gemini", "settings.json"));
   const geminiPolicy = join(home, ".gemini", "policies", GEMINI_NATIVE_AGENT_POLICY);

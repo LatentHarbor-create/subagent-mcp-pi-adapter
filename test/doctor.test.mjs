@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import assert from "node:assert/strict";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { Readable, Writable } from "node:stream";
@@ -256,17 +257,17 @@ decision = "deny"
   const r = await checkNativeAgentSuppression({ home, isTTY: false });
   assert.equal(r.status, "PASS");
   assert.match(r.detail, /claude static deny ok/);
-  assert.match(r.detail, /codex static disable ok/);
+  assert.doesNotMatch(r.detail, /codex static disable/);
   assert.match(r.detail, /gemini policy deny ok/);
 }));
 
-test("native-agent-suppression: codex check requires multi_agent=false inside features", async () => withRoot(async ({ home }) => {
+test("native-agent-suppression: Codex native setting is outside MCP doctor checks", async () => withRoot(async ({ home }) => {
   mkdirSync(join(home, ".codex"), { recursive: true });
   writeFileSync(join(home, ".codex", "config.toml"), "[other]\nmulti_agent = false\n[features]\nmulti_agent = true\n", "utf8");
 
   const r = await checkNativeAgentSuppression({ home, isTTY: false });
-  assert.equal(r.status, "WARN");
-  assert.match(r.detail, /codex missing \[features\] multi_agent=false/);
+  assert.equal(r.status, "PASS");
+  assert.doesNotMatch(r.detail, /codex|multi_agent/);
 }));
 
 test("native-agent-suppression: warns for missing defense-in-depth layers", async () => withRoot(async ({ home }) => {
@@ -278,7 +279,7 @@ test("native-agent-suppression: warns for missing defense-in-depth layers", asyn
   const r = await checkNativeAgentSuppression({ home, isTTY: false });
   assert.equal(r.status, "WARN");
   assert.match(r.detail, /claude missing permissions\.deny/);
-  assert.match(r.detail, /codex missing \[features\] multi_agent=false/);
+  assert.doesNotMatch(r.detail, /codex|multi_agent/);
   assert.match(r.detail, /gemini missing experimental\.enableAgents=false/);
   assert.match(r.detail, /gemini missing policy/);
 }));

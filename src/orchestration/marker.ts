@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import { createHash } from "node:crypto";
 import {
   existsSync,
@@ -15,17 +16,13 @@ import { atomicWriteJson } from "./atomic-write.js";
  * the MCP tool (src/index.ts) and the hook entrypoints (src/hooks/*.ts).
  *
  * The marker is a per-project temp file keyed by a hash of the normalized
- * working directory. Orchestration is default OFF per session (hook-covered
- * hosts only); ON requires an explicit enable record, an active 15% latch, or a
- * metering-undetectable fail-safe. OFF is never represented by a disable record
- * alone anymore; disable records now serve as a post-enable/post-latch opt-out
- * (2h TTL), same mechanism, inverted role. Anonymous owner keys are unchanged:
- * always fail-safe ON, never enable/disable-able (this is the desktop/no-hook
- * carve-out, out of scope for this redesign).
+ * working directory. Orchestration defaults OFF and requires an explicit,
+ * session-scoped enable record. A disable record can override an enable for
+ * two hours. Anonymous or absent keys cannot enable orchestration.
  *
  * FAIL-SAFE: every filesystem operation is wrapped so this module NEVER throws
  * to its caller. Reads that fail return safe defaults. A hook that cannot read
- * disable state must degrade to ON, never crash the host turn.
+ * enable state must degrade to OFF, never crash the host turn.
  */
 
 export interface MarkerState {
@@ -151,6 +148,72 @@ export function writeEnable(sessionKey: string): void {
   }
 }
 
+// --- Pi session mode (auto / on / off) ------------------------------------------------
+// Same state store + same hashKey keying as the orchestration enable/disable
+// records — a minimal schema extension, NOT a second state-file system.
+// "off" only suppresses AUTOMATIC Pi delegation; the SOLE-CHANNEL rule and
+// permission semantics are untouched (set via orchestration-mode).
+
+export type PiSessionMode = "auto" | "on" | "off";
+
+export function piSessionModePath(sessionKey: string): string {
+  return join(stateDir, `orch-pimode-${hashKey(sessionKey)}.json`);
+}
+
+export function piAskedPath(sessionKey: string): string {
+  return join(stateDir, `orch-piasked-${hashKey(sessionKey)}.json`);
+}
+
+export function writePiSessionMode(sessionKey: string, mode: "auto" | "on" | "off"): void {
+  if (!isSessionScopedKey(sessionKey)) return;
+  try {
+    mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+    atomicWriteJson(
+      piSessionModePath(sessionKey),
+      { mode, chosen_at: Date.now() },
+      { encoding: "utf8", mode: 0o600 }
+    );
+  } catch {
+    // Fail-safe: never throw to the caller.
+  }
+}
+
+export function readPiSessionMode(
+  sessionKey: string
+): "auto" | "on" | "off" | undefined {
+  try {
+    const raw = readFileSync(piSessionModePath(sessionKey), "utf8");
+    const parsed = JSON.parse(raw) as { mode?: unknown };
+    if (parsed.mode === "auto" || parsed.mode === "on" || parsed.mode === "off") {
+      return parsed.mode;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function markPiSessionAsked(sessionKey: string): void {
+  if (!isSessionScopedKey(sessionKey)) return;
+  try {
+    mkdirSync(stateDir, { recursive: true, mode: 0o700 });
+    atomicWriteJson(piAskedPath(sessionKey), { asked_at: Date.now() }, {
+      encoding: "utf8",
+      mode: 0o600,
+    });
+  } catch {
+    // Fail-safe: never throw to the caller.
+  }
+}
+
+export function piSessionAsked(sessionKey: string): boolean {
+  try {
+    return existsSync(piAskedPath(sessionKey));
+  } catch {
+    return false;
+  }
+}
+
 export function removeEnable(sessionKey: string): void {
   try {
     unlinkSync(enablePath(sessionKey));
@@ -243,12 +306,12 @@ export function isSessionDisabled(sessionKey: string, now: number = Date.now()):
 
 export function isActive(cwd: string, sessionKey?: string): boolean {
   try {
-    if (sessionKey === undefined || !isSessionScopedKey(sessionKey)) return true;
+    if (sessionKey === undefined || !isSessionScopedKey(sessionKey)) return false;
     const now = Date.now();
     if (isDisableActive(disablePath(sessionKey), now)) return false;
     return isEnableActive(enablePath(sessionKey), now);
   } catch {
-    return true;
+    return false;
   }
 }
 

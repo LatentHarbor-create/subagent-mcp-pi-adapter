@@ -1,0 +1,9 @@
+[mcp_servers.subagent-mcp]
+command = "node"
+args = ["/absolute/path/to/subagent-mcp-pi-adapter/dist/index.js"]
+enabled = true
+
+# Optional: prevent Pi launches for these directories and their descendants.
+# Values are a JSON array; paths must be absolute.
+[mcp_servers.subagent-mcp.env]
+SUBAGENT_PI_BLOCKED_ROOTS = '["/absolute/path/to/private-project"]'

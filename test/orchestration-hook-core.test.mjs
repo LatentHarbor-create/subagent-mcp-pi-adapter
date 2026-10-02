@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * orchestration-hook-core.test.mjs — Unit tests for the provider-agnostic hook
  * core (dist/orchestration/hook-core.js).
@@ -225,7 +226,11 @@ function writeFreshMarker(cwd) {
   });
 }
 
+const enabledTestSessions = new Map();
+function enableForTest(cwd, session) { writeEnable(session); const keys=enabledTestSessions.get(cwd)||[]; keys.push(session); enabledTestSessions.set(cwd,keys); }
 function cleanup(cwd, root) {
+  for (const session of enabledTestSessions.get(cwd)||[]) removeEnable(session);
+  enabledTestSessions.delete(cwd);
   rmSync(markerPath(cwd), { force: true });
   rmSync(reminderPath(cwd), { force: true });
   rmSync(cwd, { recursive: true, force: true });
@@ -526,7 +531,7 @@ test("CARRYOVER then next same-session turn -> rule carrier, no repeat notice", 
   }
 });
 
-test("keyless payload resolves to anonymous owner and converges within TTL", () => {
+test("keyless payload resolves to anonymous owner but remains OFF", () => {
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   try {
@@ -534,13 +539,12 @@ test("keyless payload resolves to anonymous owner and converges within TTL", () 
     const owner = anonKey(cwd, "test");
     const out = runHook({ cwd, transcript_path: undefined }, env,
       makeAdapter({ turn: 3 }));
-    assert.ok(out.includes(CARRYOVER_TEXT),
-      "a real prior owner and new anonymous owner is carryover once");
-    assert.equal(readMarker(cwd).owner_session, owner);
-    assert.equal(readReminder(cwd).counts[owner], 0);
+    assertTagged(out, { state: "off", kind: "carrier", body: SHORT_OFF_TEXT });
+    assert.equal(readMarker(cwd).owner_session, "prev");
+    assert.equal(readReminder(cwd).counts[owner], 1);
     assertTagged(
       runHook({ cwd, transcript_path: undefined }, env, makeAdapter({ turn: 4 })),
-      { state: "on", kind: "carrier", body: SHORT_ON_TEXT }
+      { state: "off", kind: "carrier", body: SHORT_OFF_TEXT }
     );
   } finally {
     cleanup(cwd, root);
@@ -595,7 +599,7 @@ test("transcript_path fallback normalizes slash and case variants before hashing
   }
 });
 
-test("anonymous owner claim re-anchors after TTL and then returns to cadence", () => {
+test("anonymous owner stays OFF after claim TTL", () => {
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   try {
@@ -614,11 +618,11 @@ test("anonymous owner claim re-anchors after TTL and then returns to cadence", (
       carryover_ack: false,
     });
     const out = runHook({ cwd, transcript_path: undefined }, env, makeAdapter({ turn: 2 }));
-    assertTagged(out, { state: "on", kind: "directive", body: `${FULL_TEXT}\n${REM_ON_TEXT}` });
+    assertTagged(out, { state: "off", kind: "carrier", body: SHORT_OFF_TEXT });
     assert.equal(readMarker(cwd).owner_session, owner);
     assertTagged(
       runHook({ cwd, transcript_path: undefined }, env, makeAdapter({ turn: 3 })),
-      { state: "on", kind: "carrier", body: SHORT_ON_TEXT }
+      { state: "off", kind: "carrier", body: SHORT_OFF_TEXT }
     );
   } finally {
     cleanup(cwd, root);
@@ -794,11 +798,13 @@ test("the shipped repo directives dir carries the sub-orchestrator asset", () =>
 // ---------------------------------------------------------------------------
 test("missing directive files -> '' (fail-safe read, never throws)", () => {
   const cwd = makeCwd();
+  const session = `missing-directive:${cwd}`;
+  enableForTest(cwd, session);
   // Directives dir exists but FULL and the ON reminder are absent.
   const { root, env } = makeDirectivesEnv({ withFull: false, withReminderOn: false });
   try {
     writeFreshMarker(cwd);
-    const out = runHook({ cwd, transcript_path: undefined }, env,
+    const out = runHook({ cwd, session_id: session, transcript_path: undefined }, env,
       makeAdapter({ turn: 0 }));
     assert.equal(out, "", "unreadable directives yield '' rather than throwing");
     assert.equal(readMarker(cwd).baseline_turn, null,
@@ -953,6 +959,7 @@ test("metering lift at turn >=2 renders plan utilization and trips latch at exac
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-meter-plan:${cwd}`;
+  enableForTest(cwd, session);
   const adapter = makeAdapter({
     turn: 2,
     liftUsage: () => ({
@@ -988,6 +995,7 @@ test("plan latch persists but the one-time latch coaching body does not re-fire"
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-meter-latch-steady:${cwd}`;
+  enableForTest(cwd, session);
   const adapter = makeAdapter({
     turn: 2,
     liftUsage: () => ({
@@ -1040,6 +1048,7 @@ test("the 20% unlock reports the handoff phase without the mandatory directive",
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-meter-handoff-unlocked:${cwd}`;
+  enableForTest(cwd, session);
   const adapter = makeAdapter({ turn: 2, liftUsage: usageAtPct(20) });
   try {
     const claim = runHook({ cwd, session_id: session, transcript_path: "synthetic" }, env, adapter);
@@ -1092,6 +1101,7 @@ test("runHook derives write_required at 80 and a prepared handoff ends the injec
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-write-required-boundary:${cwd}`;
+  enableForTest(cwd, session);
   let pct = 79;
   const adapter = makeAdapter({ turn: 2, liftUsage: () => usageAtPct(pct)() });
   const payload = { cwd, session_id: session, transcript_path: "synthetic" };
@@ -1126,6 +1136,7 @@ test("write_required injection remains active with contextCoaching:false", () =>
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-write-required-coaching-off:${cwd}`;
+  enableForTest(cwd, session);
   const offEnv = withCoachingOff(env);
   try {
     const out = runHook(
@@ -1154,10 +1165,11 @@ test("write_required injection remains active with contextCoaching:false", () =>
 // latch coaching body, the 20% handoff unlock / handoff phase, or (per the
 // mandatory-lifecycle isolation rule) any mandatory lifecycle injection.
 // ---------------------------------------------------------------------------
-test("coaching OFF still fires the 15% latch coaching and still force-enables orchestration", () => {
+test("coaching OFF still fires 15% planning coaching in an explicitly enabled session", () => {
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-coach-off-latch:${cwd}`;
+  enableForTest(cwd, session);
   const adapter = makeAdapter({ turn: 2, liftUsage: usageAtPct(15) });
   const offEnv = withCoachingOff(env);
   try {
@@ -1170,7 +1182,7 @@ test("coaching OFF still fires the 15% latch coaching and still force-enables or
       body: LATCH_TEXT,
       remaining: 85,
     });
-    assert.ok(isActive(cwd), "the 15% latch must force-enable orchestration even with coaching OFF");
+    assert.ok(isActive(cwd, session), "explicit enable remains active after 15% coaching");
   } finally {
     clearLatch(session);
     cleanup(cwd, root);
@@ -1182,6 +1194,7 @@ test("coaching OFF still reports the handoff phase at the 20% unlock", () => {
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-coach-off-unlock:${cwd}`;
+  enableForTest(cwd, session);
   const adapter = makeAdapter({ turn: 2, liftUsage: usageAtPct(20) });
   const offEnv = withCoachingOff(env);
   try {
@@ -1233,6 +1246,7 @@ test("metering contradiction writes clamped numeric record", () => {
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-meter-contradiction:${cwd}`;
+  enableForTest(cwd, session);
   const adapter = makeAdapter({
     turn: 2,
     liftUsage: () => ({
@@ -1415,6 +1429,7 @@ test("end-to-end: a detected compaction injects the mandatory read once, then tr
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-compaction-e2e:${cwd}`;
+  enableForTest(cwd, session);
   try {
     const { out, out3 } = driveCompactionLifecycle(cwd, env, session);
     assertTagged(out, {
@@ -1442,6 +1457,7 @@ test("end-to-end compaction read injection fires even with contextCoaching:false
   const cwd = makeCwd();
   const { root, env } = makeDirectivesEnv();
   const session = `s-compaction-coach-off:${cwd}`;
+  enableForTest(cwd, session);
   const offEnv = withCoachingOff(env);
   try {
     const { out, out3 } = driveCompactionLifecycle(cwd, offEnv, session);

@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * Entry/handler integration tests for src/index.ts.
  *
@@ -296,12 +297,14 @@ await test("server exposes orchestration guidance via MCP instructions (no ultra
       "initialize result must carry an instructions string");
     assert.match(instructions, /CANONICAL OPERATING MODEL/,
       "instructions must expose the orchestration operating-model guidance");
-    assert.match(instructions, /delegate-ONLY orchestrator/,
-      "instructions must carry the delegate operating model");
-    assert.match(instructions, /AskUserQuestion/,
-      "instructions must name the Claude permission tool");
-    assert.match(instructions, /request-user-input/,
-      "instructions must name the Codex permission tool");
+    assert.match(instructions, /ON\. delegate MCP-managed steps/,
+      "instructions must scope required MCP delegation to ON");
+    assert.match(instructions, /OFF\/UNKNOWN permits inline and task-fit Pi launches/,
+      "OFF must permit inline work and separate Pi task-fit choices");
+    assert.match(instructions, /native Codex subagents remain independent/,
+      "MCP instructions must preserve the native Codex channel");
+    assert.match(instructions, /structured-question/,
+      "instructions must direct permission questions through the host's structured question tool");
     assert.ok(!/ultracode/i.test(instructions),
       "instructions must not reference \"ultracode\"");
   } finally {
@@ -1139,7 +1142,9 @@ await test("launch schema keeps API providers internal to auto slot routing", as
     await session.initialize();
     const listed = await session.request("tools/list", {});
     const launchTool = listed.result.tools.find((tool) => tool.name === "launch_agent");
-    assert.deepEqual(launchTool.inputSchema.properties.provider.enum, ["claude", "codex"]);
+    // pi is a launchable override provider (added by the pi adapter); "api"
+    // remains internal to auto slot routing and must never appear here.
+    assert.deepEqual(launchTool.inputSchema.properties.provider.enum, ["claude", "codex", "pi"]);
   } finally {
     await session.close();
     rmTempRoot(tempRoot);

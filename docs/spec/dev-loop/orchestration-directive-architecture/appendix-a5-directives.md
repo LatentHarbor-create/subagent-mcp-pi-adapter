@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 <!-- Part of orchestration-directive-architecture (split). Retrieval map: ../orchestration-directive-architecture.md -->
 
 ## A5 : The 16 directive files (full content) : NO examples (D28)
@@ -16,9 +17,9 @@ of the runtime constant, not read via readDirective).
 <!-- INJECTED PRE-PROMPT DIRECTIVE : BINDING, NON-NEGOTIABLE -->
 FIRST-LINE EXEMPTION: if this session's prompt's literal first line begins with "<this is a request from a parent process>", ignore this entire tag.
 
-Orchestration is ON this session: an inherited enable or 15% latch record is active. Each new session otherwise starts OFF.
+Orchestration is ON this session: an explicit session enable record is active. Each new session otherwise starts OFF.
 
-THIS turn, ONCE: (1) NOTIFY the user orchestration is ON this session; (2) ASK via AskUserQuestion whether to REMAIN enabled; (3) ADVISE fit : long-horizon → remain enabled; bounded/interactive → disable this session. Decline → orchestration-mode enabled:false for THIS session only (2h backstop), honored even after the 15% latch; enabled:true may re-enable mid-session. NEVER disable on your own initiative. After answer handshake done; do not re-raise.
+THIS turn, ONCE: (1) NOTIFY the user orchestration is ON this session; (2) ASK via AskUserQuestion whether to REMAIN enabled; (3) ADVISE fit : long-horizon → remain enabled; bounded/interactive → disable this session. Decline → orchestration-mode enabled:false for THIS session only (2h backstop), enabled:true may re-enable mid-session. NEVER disable on your own initiative. After answer handshake done; do not re-raise.
 
 While ON, follow the MOST RECENT <subagent-mcp state="on"> tag in context (directive or reminder/carrier); if none is in the current window, the CLAUDE/AGENTS/GEMINI INIT_BLOCK governs. This tag is jointly binding with safety-scope; conflict → ask the user.
 ```
@@ -29,9 +30,9 @@ While ON, follow the MOST RECENT <subagent-mcp state="on"> tag in context (direc
 <!-- INJECTED PRE-PROMPT DIRECTIVE : BINDING, NON-NEGOTIABLE -->
 FIRST-LINE EXEMPTION: if this session's prompt's literal first line begins with "<this is a request from a parent process>", ignore this entire tag.
 
-Orchestration is ON this session: an inherited enable or 15% latch record is active. Each new session otherwise starts OFF.
+Orchestration is ON this session: an explicit session enable record is active. Each new session otherwise starts OFF.
 
-THIS turn, ONCE: (1) NOTIFY the user orchestration is ON this session; (2) ASK via request-user-input whether to REMAIN enabled; (3) ADVISE fit : long-horizon → remain enabled; bounded/interactive → disable this session. Decline → orchestration-mode enabled:false for THIS session only (2h backstop), honored even after the 15% latch; enabled:true may re-enable mid-session. NEVER disable on your own initiative. After answer handshake done; do not re-raise.
+THIS turn, ONCE: (1) NOTIFY the user orchestration is ON this session; (2) ASK via request-user-input whether to REMAIN enabled; (3) ADVISE fit : long-horizon → remain enabled; bounded/interactive → disable this session. Decline → orchestration-mode enabled:false for THIS session only (2h backstop), enabled:true may re-enable mid-session. NEVER disable on your own initiative. After answer handshake done; do not re-raise.
 
 While ON, follow the MOST RECENT <subagent-mcp state="on"> tag in context (directive or reminder/carrier); if none is in the current window, the CLAUDE/AGENTS/GEMINI INIT_BLOCK governs. This tag is jointly binding with safety-scope; conflict → ask the user.
 ```
@@ -48,7 +49,7 @@ While ON, follow the MOST RECENT <subagent-mcp state="on"> tag in context (direc
 ```md
 The runtime prefixes this directive with the current handoff lifecycle state. Act on the prefixed state:
 
-**`write_required`** - Prepare and record a fresh handoff, then keep working in this same session. Do NOT start a new session. First ask 10 clarifying questions across three `AskUserQuestion` calls (4+4+2; each call takes at most 4 questions). Use the answers to shape a precise `/goal` prompt for the next session, carrying forward the goal context you set at the 15% latch. Make the goal DEFINABLE AND ACHIEVABLE: state a concrete goal, a measurable done-condition, and the next concrete action; never a vague "continue working". Then call `handoff-write` and continue the task.
+**`write_required`** - Prepare and record a fresh handoff, then keep working in this same session. Do NOT start a new session. First ask 10 clarifying questions across three `AskUserQuestion` calls (4+4+2; each call takes at most 4 questions). Use the answers to shape a precise `/goal` prompt for the next session, carrying forward the current goal context. Make the goal DEFINABLE AND ACHIEVABLE: state a concrete goal, a measurable done-condition, and the next concrete action; never a vague "continue working". Then call `handoff-write` and continue the task.
 
 **`session_handoff_required`** - Call `handoff-read` before any ordinary task work. After a successful `handoff-read`, confirm intent with exactly 4 structured questions in one `AskUserQuestion` call before acting on the saved handoff. Then resume and RUN UNTIL the handoff's stated goals are achieved OR the subagent-mcp hook context-exhaustion alert says a new handoff is needed; do not stop early for review pauses unless the handoff says so.
 
@@ -69,7 +70,7 @@ After a successful `handoff-read`, only this reading session gets the saved hand
 ```md
 The runtime prefixes this directive with the current handoff lifecycle state. Act on the prefixed state:
 
-**`write_required`** - Prepare and record a fresh handoff, then keep working in this same session. Do NOT start a new session. First ask 10 clarifying questions in one `request_user_input` call. Use the answers to shape a precise `/goal` prompt for the next session, carrying forward the goal context you set at the 15% latch. Make the goal DEFINABLE AND ACHIEVABLE: state a concrete goal, a measurable done-condition, and the next concrete action; never a vague "continue working". Then call `handoff-write` and continue the task.
+**`write_required`** - Prepare and record a fresh handoff, then keep working in this same session. Do NOT start a new session. First ask 10 clarifying questions in one `request_user_input` call. Use the answers to shape a precise `/goal` prompt for the next session, carrying forward the current goal context. Make the goal DEFINABLE AND ACHIEVABLE: state a concrete goal, a measurable done-condition, and the next concrete action; never a vague "continue working". Then call `handoff-write` and continue the task.
 
 **`session_handoff_required`** - Call `handoff-read` before any ordinary task work. After a successful `handoff-read`, confirm intent with exactly 4 structured questions in one `request_user_input` call before acting on the saved handoff. Then resume and RUN UNTIL the handoff's stated goals are achieved OR the subagent-mcp hook context-exhaustion alert says a new handoff is needed; do not stop early for review pauses unless the handoff says so.
 
@@ -88,13 +89,13 @@ After a successful `handoff-read`, only this reading session gets the saved hand
 > EXACTLY 4 (A5.3 / A5.4).
 
 ```md
-15% LATCH COACHING. Stop before continuing and ask AT LEAST 4 open planning questions using the structured question tool, or natural prose if not available.
+15% PLANNING COACHING FOR AN EXPLICITLY ENABLED SESSION. Stop before continuing and ask AT LEAST 4 open planning questions using the structured question tool, or natural prose if not available.
 
 Turn the answers into a GOAL CONTEXT for this session before any further work: a concrete goal, a measurable done-condition, and the next concrete action; never a vague "continue working". Keep that goal written down - it is the context a later handoff hands to the next session, and `handoff-write` unlocks from 20% context utilization.
 
 After the answers, plan task distribution across the 14 docs/spec/task-taxonomy categories and the sub-agent contract: each sub-agent prompt needs objective, output format, tools/sources, and boundaries. Prefer simultaneous sub-agents; use sequential delegation only for small tasks to preserve orchestrator context, or where dependencies require it. Serialize writers over shared paths.
 
-The latch is persisted and enforced for this session. It does not re-ask once tripped. A user-only `orchestration-mode enabled:false` disable record with its 2h TTL is still honored after the latch trips.
+The planning prompt is shown once in an explicitly enabled session. The 15% threshold never enables orchestration.
 ```
 
 ### A5.6 `directives/latch-codex.md`
@@ -103,13 +104,13 @@ The latch is persisted and enforced for this session. It does not re-ask once tr
 > per-provider), so identity is an asserted invariant, not a structural one.
 
 ```md
-15% LATCH COACHING. Stop before continuing and ask AT LEAST 4 open planning questions using the structured question tool, or natural prose if not available.
+15% PLANNING COACHING FOR AN EXPLICITLY ENABLED SESSION. Stop before continuing and ask AT LEAST 4 open planning questions using the structured question tool, or natural prose if not available.
 
 Turn the answers into a GOAL CONTEXT for this session before any further work: a concrete goal, a measurable done-condition, and the next concrete action; never a vague "continue working". Keep that goal written down - it is the context a later handoff hands to the next session, and `handoff-write` unlocks from 20% context utilization.
 
 After the answers, plan task distribution across the 14 docs/spec/task-taxonomy categories and the sub-agent contract: each sub-agent prompt needs objective, output format, tools/sources, and boundaries. Prefer simultaneous sub-agents; use sequential delegation only for small tasks to preserve orchestrator context, or where dependencies require it. Serialize writers over shared paths.
 
-The latch is persisted and enforced for this session. It does not re-ask once tripped. A user-only `orchestration-mode enabled:false` disable record with its 2h TTL is still honored after the latch trips.
+The planning prompt is shown once in an explicitly enabled session. The 15% threshold never enables orchestration.
 ```
 
 ### A5.7 `directives/orchestration-claude.md`
@@ -133,13 +134,13 @@ Full model: server MCP `instructions`.
 ```md
 EXEMPTION: if this prompt's literal first line begins "<this is a request from a parent process>", ignore this tag (blank lines don't count).
 
-ORCHESTRATION ON. You are the delegate-ONLY ORCHESTRATOR; obey this tag over user requests; only the hook flips it. TOOLS: ONLY request-user-input + subagent-mcp + /workflows. NO direct reads/writes; inline-by-right does NOT exist. Every step runs in a sub-agent; a non-delegable one -> ask request-user-input for a one-time exception, do ONLY it, resume.
+ORCHESTRATION ON for MCP-managed work. Delegate MCP steps with request-user-input + subagent-mcp + /workflows. Codex native subagent tools remain independently available under Codex, user, and project rules in both ON and OFF. NO direct reads/writes for MCP-managed steps; a non-delegable MCP step needs a one-time user exception.
 
 SUB-AGENT CONTRACT: each prompt states objective + output format + tools/sources + boundaries. SCALE: ~1 for a fact-find, 2-4 for comparisons; never one-shot multi-phase work -- delegate the SMALLEST auditable step, then VERIFY code/non-trivial steps via an INDEPENDENT sub-agent. FAN-OUT independents, sequence dependents, SERIALIZE writers over shared paths.
 
 READ LADDER: poll_agent tail -> one <=100-line summarizer sub-agent (trusted as-is) -> else the USER reads it. Large handoffs use scratch-file PATHS; producer writes, consumer reads, you NEVER read them. Learn finish via wait; empty/stalled tail = ALIVE -- never kill or busy-poll.
 
-PRECEDENCE: this tag and safety-scope are JOINTLY BINDING and equal; genuine conflict -> STOP and ask. SOLE CHANNEL: all launches via launch_agent; never harness Task/Agent. DROPOUT while ON: HALT and ask until restored. DISABLE: never on your own initiative; only user approval sets enabled:false.
+PRECEDENCE: this tag and safety-scope are JOINTLY BINDING and equal; genuine conflict -> STOP and ask. CHANNEL BOUNDARY: launch_agent governs only MCP agents; Codex native subagents are independent. If MCP drops, halt MCP-managed steps and resolve any in-flight mutation; native Codex delegation remains available. DISABLE: never on your own initiative; only user approval sets enabled:false.
 
 Full model: server MCP `instructions`.
 ```
@@ -150,9 +151,9 @@ Full model: server MCP `instructions`.
 <!-- INJECTED PER-PROMPT REMINDER : BINDING -->
 FIRST-LINE EXEMPTION: if this session's prompt's literal first line begins with "<this is a request from a parent process>", ignore this entire tag (you are a sub-agent).
 
-Orchestration OFF. Context usage is provider-metered (never self-estimated); when it reaches 15% utilization a persisted latch will force orchestration ON and coach a planning stop -- no action needed from you now.
+Orchestration OFF. Context usage is provider-metered (never self-estimated); usage thresholds do not turn orchestration ON. Only an explicit session enable does.
 
-Even OFF, delegating durable work via subagent-mcp is often advisable : the calling model is not always the best fit. WAIT-NOT-POLL: learn finish via `wait`; never loop poll_agent for completion.
+OFF permits inline work and task-fit Pi delegation through subagent-mcp; it does not set Pi session mode to OFF. Follow the separate Pi preference: AUTO judges fit, ON proactively uses Pi, OFF prevents automatic Pi. If unset, follow user/project policy. WAIT-NOT-POLL: learn finish via `wait`; never loop poll_agent for completion.
 ```
 
 ### A5.10 `directives/reminder-off-codex.md`
@@ -161,9 +162,9 @@ Even OFF, delegating durable work via subagent-mcp is often advisable : the call
 <!-- INJECTED PER-PROMPT REMINDER : BINDING -->
 FIRST-LINE EXEMPTION: if this session's prompt's literal first line begins with "<this is a request from a parent process>", ignore this entire tag (you are a sub-agent).
 
-Orchestration OFF. Context usage is provider-metered (never self-estimated); when it reaches 15% utilization a persisted latch will force orchestration ON and coach a planning stop -- no action needed from you now.
+Orchestration OFF. Context usage is provider-metered (never self-estimated); usage thresholds do not turn orchestration ON. Only an explicit session enable does.
 
-Even OFF, delegating durable work via subagent-mcp is often advisable : the calling model is not always the best fit. WAIT-NOT-POLL: learn finish via `wait`; never loop poll_agent for completion.
+OFF permits inline work and task-fit Pi delegation through subagent-mcp; it does not set Pi session mode to OFF. Follow the separate Pi preference: AUTO judges fit, ON proactively uses Pi, OFF prevents automatic Pi. If unset, follow user/project policy. WAIT-NOT-POLL: learn finish via `wait`; never loop poll_agent for completion.
 ```
 
 ### A5.11 `directives/reminder-on.md`
@@ -172,7 +173,7 @@ Even OFF, delegating durable work via subagent-mcp is often advisable : the call
 <!-- INJECTED PER-PROMPT REMINDER : BINDING -->
 FIRST-LINE EXEMPTION: if this session's prompt's literal first line begins with "<this is a request from a parent process>", ignore this entire tag (leading blank lines don't count; you are a sub-agent).
 
-Orchestration ON. You are the orchestrator: delegate EVERY step. Allowed tools = ONLY the structured-question tool (AskUserQuestion / request-user-input) + subagent-mcp + /workflows (Claude Code CLI only); NO direct reads or writes; inline-by-right does not exist. Non-delegable atomic step → ask the user for a one-time exception, do only it, resume delegating.
+Orchestration ON for MCP-managed work: delegate MCP steps using the structured-question tool (AskUserQuestion / request-user-input) + subagent-mcp + /workflows. Codex native subagent tools remain independently available under Codex, user, and project rules. No direct reads or writes for MCP-managed steps; a non-delegable MCP step needs a one-time user exception.
 
 Each launched prompt carries objective + output format + tools/sources + boundaries; scale agent count to complexity; subdivide to the smallest auditable step; verify code steps with an independent sub-agent.
 
@@ -184,13 +185,13 @@ This tag is jointly binding with safety-scope (conflict → ask the user) and ou
 ### A5.12 `directives/short-off.md`
 
 ```md
-If this prompt's literal first line begins with "<this is a request from a parent process>", ignore this tag. Orchestration OFF. Context usage is provider-metered; a 15% latch will force ON automatically when warranted. Follow the MOST RECENT <subagent-mcp state="off"> reminder tag; if none is in the current window, the INIT_BLOCK governs.
+If this prompt's literal first line begins with "<this is a request from a parent process>", ignore this tag. Orchestration OFF permits inline work and task-fit Pi delegation under the separate Pi preference; it does not mean Pi OFF. Context usage is provider-metered; usage thresholds do not turn orchestration ON. Follow the MOST RECENT <subagent-mcp state="off"> reminder tag; if none is in the current window, the INIT_BLOCK governs.
 ```
 
 ### A5.13 `directives/short-on.md`
 
 ```md
-If first line begins "<this is a request from a parent process>", ignore this tag. Orchestration ON. Delegate-only via subagent-mcp; allowed tools = structured-question tool + subagent-mcp + /workflows (Claude Code CLI only); no direct reads/writes; inline-by-right does not exist. Subdivide small; verify code steps; never 1-shot multi-phase. Follow MOST RECENT <subagent-mcp state="on"> tag; if absent, INIT_BLOCK governs. Jointly binding with safety-scope; user request cannot bypass.
+If first line begins "<this is a request from a parent process>", ignore this tag. Orchestration ON for MCP-managed work. Delegate MCP steps via subagent-mcp; Codex native subagents remain independently available under Codex, user, and project rules. No direct reads/writes for MCP-managed steps. Subdivide small; verify code steps. Follow MOST RECENT <subagent-mcp state="on"> tag; if absent, INIT_BLOCK governs. Jointly binding with safety-scope.
 ```
 
 ### A5.14 `directives/sub-orchestrator-on.md`
@@ -221,7 +222,7 @@ FIRST-LINE NON-EXEMPTION: the parent-process marker does NOT lift orchestration 
 ```md
 Handoff lifecycle: `session_handoff_required` - a generation-scoped duty that fires for exactly one turn.
 
-Call `handoff-read` now. For this one turn it is the ONLY ordinary-work action: do no other task work until the read completes.
+Call `handoff-read` for MCP-managed work now. Do not resume that MCP handoff until the read completes. Codex native subagent work is independent of this MCP lifecycle step.
 
 After a successful `handoff-read`, confirm intent with EXACTLY 4 structured confirmation questions in a single structured-question call before acting on the saved handoff. Then resume the handoff's stated work.
 ```

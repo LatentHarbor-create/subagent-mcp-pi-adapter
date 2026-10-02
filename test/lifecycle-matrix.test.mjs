@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * Lifecycle matrix tests for src/index.ts handlers.
  *
@@ -151,6 +152,7 @@ function makeTempEnv() {
     {
       ...process.env,
       FAKE_NPM_PREFIX: fakePrefix,
+      SUBAGENT_SLOT_DIR: join(tempRoot, "slots"),
       SUBAGENT_SPAWN_GRACE_MS: "0",
       SUBAGENT_MOCK_CLAUDE_DRIVER: "jsonl",
       SUBAGENT_MOCK_CODEX_DRIVER: "jsonl",
@@ -233,16 +235,22 @@ function createMcpSession(entrypoint, options = {}) {
   }
 
   async function close() {
+    const stopped = new Promise((resolveClose) => {
+      if (child.exitCode !== null || child.signalCode !== null) resolveClose();
+      else child.once("exit", resolveClose);
+    });
+    child.stdin.end();
     if (process.platform === "win32" && child.pid) {
-      spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
+      const killed = spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
         stdio: "ignore",
         windowsHide: true,
       });
+      if (killed.status !== 0) child.kill();
     } else {
       child.kill();
     }
     await withTimeout(
-      new Promise((resolveClose) => child.once("exit", resolveClose)),
+      stopped,
       2000,
       "server close",
       () => `stderr=${stderr}`
@@ -310,7 +318,7 @@ for (const { provider, model, effort } of MODEL_MATRIX) {
       await callTool(session, "kill_agent", { agent_id: payload.agent_id });
     } finally {
       await session.close();
-      rmSync(tempRoot, { recursive: true, force: true });
+      rmSync(tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
   });
 }
@@ -364,7 +372,7 @@ for (const { provider, model, effort } of [
       assert.equal(afterKill.isError, true, "send_message after kill must be an error");
     } finally {
       await session.close();
-      rmSync(tempRoot, { recursive: true, force: true });
+      rmSync(tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
   });
 }

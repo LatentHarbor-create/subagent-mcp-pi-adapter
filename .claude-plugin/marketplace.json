@@ -1,15 +1,15 @@
 {
   "name": "subagent-mcp",
   "owner": {
-    "name": "Lexi Blackburn"
+    "name": "Pi adapter maintainers"
   },
-  "description": "Local Claude Code / Codex CLI sub-agent orchestration: MCP server + orchestration-mode hook.",
+  "description": "Modified for the subagent-mcp Pi adapter fork. Modified for the Pi adapter fork: local Pi RPC workers through MCP.",
   "plugins": [
     {
       "name": "subagent-mcp",
       "version": "3.2.3",
       "source": "./",
-      "description": "MCP server for local Claude Code / Codex CLI sub-agents, plus orchestration-mode directive and tool-gate hooks."
+      "description": "Modified for the Pi adapter fork: local Pi RPC workers through MCP."
     }
   ]
 }

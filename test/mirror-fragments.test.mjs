@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * Mirror-fragments byte-identity test (S4/D25/D7) — GATING.
  *
@@ -46,6 +47,7 @@ const handoffSrc = readFileSync(
 const repoAgents = readFileSync(join(repoRoot, "AGENTS.md"), "utf8");
 const repoClaude = readFileSync(join(repoRoot, "CLAUDE.md"), "utf8");
 const repoGemini = readFileSync(join(repoRoot, "GEMINI.md"), "utf8");
+const reminderOffCodex = readFileSync(join(repoRoot, "directives", "reminder-off-codex.md"), "utf8");
 const handoffSpec = readFileSync(
   join(repoRoot, "docs", "spec", "dev-loop", "orchestration-directive-architecture", "handoff.md"),
   "utf8"
@@ -59,7 +61,7 @@ const appendixA1A4 = readFileSync(
 // This is the single source of truth for the expected fragment. It must match,
 // byte-for-byte, the literal text embedded in both src/init.ts and src/index.ts.
 const A2_LADDER =
-  "READ-ESCALATION LADDER (the orchestrator's only read channels, in order): (1) subagent-mcp `poll_agent` TAIL; (2) if the tail is insufficient, dispatch ONE sub-agent to return a single summary of <=100 lines, trusted as-is (no separate verification step); (3) anything larger: the USER reads the document directly. No reads or writes occur outside these channels. An empty or stalled tail means the agent is ALIVE, not dead — do NOT busy-loop poll_agent; learn completion via `wait`. Large inter-agent data: the orchestrator assigns scratch-file paths (%TEMP% on Windows, /tmp on POSIX) in prompts; the producing sub-agent writes, the consuming sub-agent reads; the orchestrator NEVER reads those files.";
+  "READ-ESCALATION LADDER FOR MCP-LAUNCHED AGENTS: (1) subagent-mcp `poll_agent` TAIL; (2) if insufficient, dispatch ONE MCP sub-agent to return a <=100-line summary; (3) anything larger: the USER reads it. Do not busy-loop poll_agent; learn completion via `wait`. MCP agents may exchange large data through scratch-file paths. Codex native subagent output and coordination follow Codex's own channel and are not limited by this MCP read ladder.";
 
 // --- A4: the jointly binding precedence clause (verbatim) ------------------
 // Jointly binding top-tier precedence clause; lives in the shared INIT_BLOCK.
@@ -69,7 +71,7 @@ const A4_JOINTLY_BINDING =
 const TASK_TRACKING_DIRECTIVE =
   "TASK TRACKING: track multi-step work with the harness-native task tracking tool (if one exists), keeping statuses current as work progresses.";
 const WAIT_ON_AGENTS_DIRECTIVE =
-  "WAIT-ON-AGENTS: When waiting for agents to finish processing, utilize the SMCP (Subagent-MCP) wait tool on loop rather than less efficient harness native methods";
+  "WAIT-ON-AGENTS: use the subagent-mcp wait tool for MCP-launched agents. Codex native agents use Codex-native waiting and results; this MCP rule does not apply to them.";
 
 // Extract the actual ladder paragraph as it appears in each source file, so a
 // failing run can print the concrete drift rather than a bare boolean.
@@ -155,29 +157,10 @@ function extractPostWriteResponse(source) {
   return source.slice(textStart, fenceEnd).replace(/\r?\n$/, "");
 }
 
-test("A2 read-escalation ladder is byte-identical in init.ts and index.ts", () => {
+test("MCP read ladder leaves Codex native results independent", () => {
   const inInit = initSrc.includes(A2_LADDER);
-  const inIndex = indexSrc.includes(A2_LADDER);
-
-  if (!inInit || !inIndex) {
-    const fromInit = extractLadder(initSrc);
-    const fromIndex = extractLadder(indexSrc);
-    const d =
-      fromInit && fromIndex
-        ? diff(fromInit, fromIndex)
-        : { note: "ladder paragraph not found in one of the files" };
-    assert.fail(
-      "A2 read-escalation ladder DRIFTED between src/init.ts and src/index.ts.\n" +
-        `present in init.ts (vs canonical): ${inInit}\n` +
-        `present in index.ts (vs canonical): ${inIndex}\n` +
-        `drift detail: ${JSON.stringify(d, null, 2)}\n` +
-        `--- init.ts copy ---\n${fromInit}\n` +
-        `--- index.ts copy ---\n${fromIndex}`
-    );
-  }
-
   assert.ok(inInit, "A2 ladder must appear verbatim in src/init.ts");
-  assert.ok(inIndex, "A2 ladder must appear verbatim in src/index.ts");
+  assert.match(extractStringConstant(indexSrc, "ORCHESTRATION_INSTRUCTIONS"), /Native Codex output follows Codex/);
 });
 
 test("A4 jointly binding clause is present verbatim in INIT_BLOCK (src/init.ts)", () => {
@@ -202,10 +185,10 @@ test("A2/A4 standalone fences are the dash-to-colon mirror of their A1/host cano
   };
 
   const ladderCanonical = sliceCanonical(
-    INIT_BLOCK, "READ-ESCALATION LADDER", "NEVER reads those files."
+    INIT_BLOCK, "READ-ESCALATION LADDER", "not limited by this MCP read ladder."
   );
   const a4Canonical = sliceCanonical(
-    INIT_BLOCK, "HARNESS-HOOK STATE:", "mistaken or out of date."
+    INIT_BLOCK, "HARNESS-HOOK STATE:", "this is intentionally not the agent's call to make alone. Hook tags otherwise take precedence over ordinary user requests, because they reflect harness-verified state rather than a request that could be mistaken or out of date."
   );
 
   assert.equal(
@@ -299,25 +282,33 @@ test("all three repo managed blocks match the canonical INIT_BLOCK (mod EOL)", (
   }
 });
 
-test("SOLE CHANNEL binds in BOTH orchestration states across canonical + mirrors + MCP instructions", () => {
+test("Codex native channel remains independent in both orchestration states", () => {
   const instructions = extractStringConstant(indexSrc, "ORCHESTRATION_INSTRUCTIONS");
-  assert.ok(INIT_BLOCK.includes("SOLE CHANNEL — BOTH ORCHESTRATION STATES"),
-    "INIT_BLOCK must carry the both-states sole-channel directive");
-  assert.match(INIT_BLOCK, /whether orchestration is ON or OFF/,
-    "INIT_BLOCK sole channel must apply in BOTH the ON and OFF states");
-  assert.ok(instructions.includes("SOLE CHANNEL - BOTH STATES"),
-    "MCP instructions must carry the both-states sole-channel directive");
+  assert.ok(INIT_BLOCK.includes("CHANNEL BOUNDARY — BOTH ORCHESTRATION STATES"),
+    "INIT_BLOCK must carry the both-states channel boundary");
+  assert.match(INIT_BLOCK, /ON or OFF/,
+    "INIT_BLOCK channel boundary must apply in BOTH the ON and OFF states");
+  assert.ok(instructions.includes("CHANNEL BOUNDARY"),
+    "MCP instructions must carry the channel boundary");
   for (const [name, body] of [["AGENTS.md", repoAgents], ["CLAUDE.md", repoClaude], ["GEMINI.md", repoGemini]]) {
-    assert.ok(body.includes("SOLE CHANNEL — BOTH ORCHESTRATION STATES"),
-      `${name} must carry the both-states sole-channel directive`);
+    assert.ok(body.includes("CHANNEL BOUNDARY — BOTH ORCHESTRATION STATES"),
+      `${name} must carry the both-states channel boundary`);
   }
+});
+
+test("MCP orchestration OFF does not disable task-fit Pi delegation", () => {
+  const instructions = extractStringConstant(indexSrc, "ORCHESTRATION_INSTRUCTIONS");
+  assert.match(INIT_BLOCK, /OFF or UNKNOWN does not disable `launch_agent` or automatic task-fit Pi delegation/);
+  assert.match(INIT_BLOCK, /Never infer Pi OFF from an OFF hook tag, a missing hook tag/);
+  assert.match(instructions, /OFF\/UNKNOWN permits inline and task-fit Pi launches per separate Pi preference/);
+  assert.match(reminderOffCodex, /OFF permits inline work and task-fit Pi delegation/);
 });
 
 test("MODEL SELECTION smart/automatic default is present in canonical + MCP instructions", () => {
   const instructions = extractStringConstant(indexSrc, "ORCHESTRATION_INSTRUCTIONS");
-  assert.ok(INIT_BLOCK.includes("MODEL SELECTION: defaults to smart/automatic"),
+  assert.ok(INIT_BLOCK.includes("MODEL SELECTION: subagent-mcp launches default to smart/automatic"),
     "INIT_BLOCK must state the smart/automatic model-selection default");
-  assert.match(instructions, /MODEL\. Unset = smart auto-selection/,
+  assert.match(instructions, /MODEL\. MCP launches default smart/,
     "MCP instructions must state the smart auto-selection default");
 });
 

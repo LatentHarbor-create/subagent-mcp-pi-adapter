@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * orchestration-adapters.test.mjs — Unit tests for the Claude and Codex
  * provider adapters (dist/hooks/orchestration-claude.js,
@@ -28,6 +29,11 @@ import {
   markerPath,
   hashKey,
   writeDisable,
+  writeEnable,
+  removeEnable,
+  writePiSessionMode,
+  piSessionModePath,
+  piAskedPath,
   removeDisable,
   readCurrentSession,
   anonKey,
@@ -36,6 +42,7 @@ import {
 import {
   SESSION_HANDOFF_REQUIRED_DIRECTIVE_FILE,
   SUB_ORCHESTRATOR_DIRECTIVE_FILE,
+  computeEffectiveActive,
   sessionKey,
 } from "../dist/orchestration/hook-core.js";
 import {
@@ -89,6 +96,26 @@ function writeFreshMarker(cwd) {
   });
 }
 
+test("orchestration is OFF without explicit enable, even with unknown metering or Pi mode ON", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "orch-explicit-only-"));
+  const session = `explicit-only-${cwd}`;
+  try {
+    assert.equal(computeEffectiveActive(cwd, session, Date.now(), true), false);
+    assert.equal(computeEffectiveActive(cwd, anonKey(cwd, "codex"), Date.now(), false), false);
+    writePiSessionMode(session, "on");
+    assert.equal(computeEffectiveActive(cwd, session, Date.now(), true), false);
+    writeEnable(session);
+    assert.equal(computeEffectiveActive(cwd, session, Date.now(), true), true);
+    writeDisable(session);
+    assert.equal(computeEffectiveActive(cwd, session, Date.now(), true), false);
+  } finally {
+    removeDisable(session);
+    removeEnable(session);
+    rmSync(piSessionModePath(session), { force: true });
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
 function lifecycleDirectives(provider) {
   const root = mkdtempSync(join(tmpdir(), "orch-lifecycle-root-"));
   const dir = join(root, "directives");
@@ -107,6 +134,31 @@ function lifecycleDirectives(provider) {
   }
   return { root, env: { PLUGIN_ROOT: root, npm_config_prefix: root } };
 }
+
+test("Codex OFF hook keeps Pi ON delegation preference independent", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "orch-pi-independent-"));
+  const session = `pi-independent-${cwd}`;
+  const { root, env } = lifecycleDirectives("codex");
+  try {
+    writePiSessionMode(session, "on");
+    const out = runCodexHook(
+      { hook_event_name: "UserPromptSubmit", cwd, session_id: session, prompt: "review several files" },
+      env
+    );
+    assert.match(out, /<subagent-mcp state="off"/);
+    assert.match(out, /\[pi-session-mode: ON\]/);
+    assert.match(out, /Independently of orchestration ON\/OFF/);
+    assert.match(out, /Smart mode without provider\/model\/effort selectors/);
+    assert.match(out, /actively look for suitable bounded Pi work/);
+    assert.match(out, /file count or task type alone does not require a Pi launch/);
+  } finally {
+    rmSync(piSessionModePath(session), { force: true });
+    rmSync(markerPath(cwd), { force: true });
+    rmSync(reminderPath(cwd), { force: true });
+    rmSync(cwd, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Claude adapter: currentTurn counts 'user' lines
@@ -1282,6 +1334,7 @@ test("codex isSubagent: ordinary prompt / unknown source -> false", () => {
 // ---------------------------------------------------------------------------
 test("codex SessionStart: active + not subagent -> FULL + ON reminder, counter re-based", () => {
   const cwd = mkdtempSync(join(tmpdir(), "orch-cx-cwd-"));
+  const session = `enabled-${cwd}`;
   // Point the resolver at a temp directives dir with known bodies.
   const root = mkdtempSync(join(tmpdir(), "orch-cx-root-"));
   const ddir = join(root, "directives");
@@ -1291,8 +1344,9 @@ test("codex SessionStart: active + not subagent -> FULL + ON reminder, counter r
   // Trust the temp plugin root via the install-prefix allowlist.
   const env = { PLUGIN_ROOT: root, npm_config_prefix: root };
   try {
+    writeEnable(session);
     writeFreshMarker(cwd);
-    const out = runCodexHook({ hook_event_name: "SessionStart", cwd }, env);
+    const out = runCodexHook({ hook_event_name: "SessionStart", cwd, session_id: session }, env);
     assert.match(
       out,
       /^<subagent-mcp state="on" kind="directive" phase="normal" utilization="unknown">\n/,
@@ -1301,11 +1355,12 @@ test("codex SessionStart: active + not subagent -> FULL + ON reminder, counter r
     assert.ok(
       out.includes("\nCODEX-FULL\nCODEX-REM-ON\n</subagent-mcp>"),
       "SessionStart body is FULL plus the ON reminder block");
-    const owner = anonKey(cwd, "codex");
+    const owner = session;
     assert.equal(readReminder(cwd).counts[owner], 0,
       "SessionStart re-baselines the session's reminder count to 0 (claim IS a LONG turn)");
     assert.equal(readCurrentSession(cwd), owner, "SessionStart writes the resolved owner pointer");
   } finally {
+    removeEnable(session);
     rmSync(markerPath(cwd), { force: true });
     rmSync(reminderPath(cwd), { force: true });
     rmSync(cwd, { recursive: true, force: true });
@@ -1315,14 +1370,16 @@ test("codex SessionStart: active + not subagent -> FULL + ON reminder, counter r
 
 test("codex SessionStart: renders persisted USED utilization when a fresh metering record exists", () => {
   const cwd = mkdtempSync(join(tmpdir(), "orch-cx-cwd-"));
+  const session = `enabled-${cwd}`;
   const root = mkdtempSync(join(tmpdir(), "orch-cx-root-"));
   const ddir = join(root, "directives");
   mkdirSync(ddir, { recursive: true });
   writeFileSync(join(ddir, "orchestration-codex.md"), "CODEX-FULL", "utf8");
   writeFileSync(join(ddir, "reminder-on.md"), "CODEX-REM-ON", "utf8");
   const env = { PLUGIN_ROOT: root, npm_config_prefix: root };
-  const owner = anonKey(cwd, "codex");
+  const owner = session;
   try {
+    writeEnable(session);
     writeFreshMarker(cwd);
     // A prior turn of THIS owner persisted ~60% USED (155K/258K harness window).
     writeMetering(
@@ -1338,7 +1395,7 @@ test("codex SessionStart: renders persisted USED utilization when a fresh meteri
         harnessContextWindow: 258400,
       })
     );
-    const out = runCodexHook({ hook_event_name: "SessionStart", cwd }, env);
+    const out = runCodexHook({ hook_event_name: "SessionStart", cwd, session_id: session }, env);
     // used_percentage ~60% -> utilization="60%", phase="handoff" (>=20),
     // footer Remaining Context=40%. Utilization is USED, footer is REMAINING.
     assert.match(
@@ -1353,6 +1410,7 @@ test("codex SessionStart: renders persisted USED utilization when a fresh meteri
       "footer shows REMAINING context (100 - used)"
     );
   } finally {
+    removeEnable(session);
     rmSync(meteringPath(owner), { force: true });
     rmSync(markerPath(cwd), { force: true });
     rmSync(reminderPath(cwd), { force: true });
@@ -1363,6 +1421,7 @@ test("codex SessionStart: renders persisted USED utilization when a fresh meteri
 
 test("codex SessionStart: no persisted metering -> utilization unknown (no lifted stale data)", () => {
   const cwd = mkdtempSync(join(tmpdir(), "orch-cx-cwd-"));
+  const session = `enabled-${cwd}`;
   const root = mkdtempSync(join(tmpdir(), "orch-cx-root-"));
   const ddir = join(root, "directives");
   mkdirSync(ddir, { recursive: true });
@@ -1370,8 +1429,9 @@ test("codex SessionStart: no persisted metering -> utilization unknown (no lifte
   writeFileSync(join(ddir, "reminder-on.md"), "CODEX-REM-ON", "utf8");
   const env = { PLUGIN_ROOT: root, npm_config_prefix: root };
   try {
+    writeEnable(session);
     writeFreshMarker(cwd);
-    const out = runCodexHook({ hook_event_name: "SessionStart", cwd }, env);
+    const out = runCodexHook({ hook_event_name: "SessionStart", cwd, session_id: session }, env);
     assert.match(
       out,
       /utilization="unknown"/,
@@ -1379,6 +1439,7 @@ test("codex SessionStart: no persisted metering -> utilization unknown (no lifte
     );
     assert.ok(!/Remaining Context=/.test(out), "no footer without a numeric percentage");
   } finally {
+    removeEnable(session);
     rmSync(markerPath(cwd), { force: true });
     rmSync(reminderPath(cwd), { force: true });
     rmSync(cwd, { recursive: true, force: true });
@@ -1416,19 +1477,76 @@ test("codex SessionStart: sub-orchestrator emits shared stateless ON directive",
   }
 });
 
-test("codex SessionStart: disabled session key -> ''", () => {
+test("codex SessionStart: disabled session key emits verified OFF tag", () => {
   const cwd = mkdtempSync(join(tmpdir(), "orch-cx-cwd-"));
   const session = `disabled-${cwd}`;
+  const { root, env } = lifecycleDirectives("codex");
   try {
     writeDisable(session);
+    writePiSessionMode(session, "off");
     const out = runCodexHook(
       { hook_event_name: "SessionStart", cwd, session_id: session },
-      { PLUGIN_ROOT: cwd }
+      env
     );
-    assert.equal(out, "", "SessionStart checks the session-keyed disable before injecting");
+    assert.match(out, /^<subagent-mcp state="off"/,
+      "SessionStart reports OFF rather than looking like a missing hook");
+    assert.match(out, /\[pi-session-mode: OFF\]/);
   } finally {
     removeDisable(session);
+    rmSync(piSessionModePath(session), { force: true });
+    rmSync(markerPath(cwd), { force: true });
+    rmSync(reminderPath(cwd), { force: true });
     rmSync(cwd, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("codex SessionStart: default OFF emits a state tag before first prompt", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "orch-cx-default-off-"));
+  const session = `default-off-${cwd}`;
+  const { root, env } = lifecycleDirectives("codex");
+  try {
+    writePiSessionMode(session, "on");
+    const out = runCodexHook(
+      { hook_event_name: "SessionStart", cwd, session_id: session },
+      env
+    );
+    assert.match(out, /^<subagent-mcp state="off"/);
+    assert.match(out, /\[pi-session-mode: ON\]/);
+  } finally {
+    rmSync(piSessionModePath(session), { force: true });
+    rmSync(markerPath(cwd), { force: true });
+    rmSync(reminderPath(cwd), { force: true });
+    rmSync(cwd, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("codex unset Pi mode asks once per new session without changing orchestration", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "orch-cx-pi-unset-"));
+  const session = `pi-unset-${cwd}`;
+  const { root, env } = lifecycleDirectives("codex");
+  try {
+    const out = runCodexHook(
+      { hook_event_name: "SessionStart", cwd, session_id: session },
+      env
+    );
+    assert.match(out, /\[pi-session-mode: UNSET\]/);
+    assert.match(out, /Ask the user ONCE in this new session/);
+    assert.match(out, /Do not carry a prior session's Pi ON mode forward/);
+    assert.match(out, /This choice is separate from MCP orchestration OFF/);
+    assert.match(out, /If that recording call is rejected, treat only that call as rejected/);
+    const next = runCodexHook(
+      { hook_event_name: "UserPromptSubmit", cwd, session_id: session, prompt: "continue" },
+      env
+    );
+    assert.doesNotMatch(next, /Ask the user ONCE in this new session/);
+  } finally {
+    rmSync(piAskedPath(session), { force: true });
+    rmSync(markerPath(cwd), { force: true });
+    rmSync(reminderPath(cwd), { force: true });
+    rmSync(cwd, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
   }
 });
 

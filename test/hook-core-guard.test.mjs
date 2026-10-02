@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, readFileSync, rmSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -7,6 +8,7 @@ import {
   readDirective,
   resolveDirectivesDir,
 } from "../dist/orchestration/hook-core.js";
+import { stripDirectiveModificationNotice } from "../dist/orchestration/directive-text.js";
 
 function withTempRoot(fn) {
   const root = mkdtempSync(join(tmpdir(), "hook-core-root-"));
@@ -37,7 +39,7 @@ try {
   );
   assert.equal(
     readDirective({ CLAUDE_PLUGIN_ROOT: "relative/bad/path" }, "short-on.md"),
-    readFileSync(join(compiledFallback, "short-on.md"), "utf8"),
+    stripDirectiveModificationNotice(readFileSync(join(compiledFallback, "short-on.md"), "utf8")),
     "relative CLAUDE_PLUGIN_ROOT still yields the bundled directive"
   );
 

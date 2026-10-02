@@ -1,6 +1,8 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { resolve as resolvePath } from "node:path";
 import { PassThrough } from "node:stream";
 import { readMergedPermissionConfig } from "./concurrency.js";
@@ -13,6 +15,7 @@ import {
   type PermissionVerdict,
 } from "./permission-engine.js";
 import { requestPendingPermission } from "./pending-permissions.js";
+import { PiRpcDriver } from "./pi-driver.js";
 
 type JsonObject = Record<string, unknown>;
 
@@ -108,7 +111,7 @@ export function claudeMessageText(message: any): string | null {
   return null;
 }
 
-class LogicalProcess extends EventEmitter implements DriverProcess {
+export class LogicalProcess extends EventEmitter implements DriverProcess {
   stdout = new PassThrough();
   stderr = new PassThrough();
   killed = false;
@@ -202,7 +205,7 @@ class AsyncInputQueue<T> implements AsyncIterable<T> {
   }
 }
 
-function writeLine(stdin: NodeJS.WritableStream | null | undefined, payload: unknown): Promise<void> {
+export function writeLine(stdin: NodeJS.WritableStream | null | undefined, payload: unknown): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!stdin || (stdin as { destroyed?: boolean }).destroyed) {
       reject(new Error("provider input stream is closed"));
@@ -1244,6 +1247,21 @@ export class ClaudeSdkDriver implements ProviderDriver {
 export async function createProviderDriver(options: DriverLaunchOptions): Promise<ProviderDriver> {
   if (options.provider === "api") {
     throw new Error("api provider dispatch not implemented");
+  }
+
+  if (options.provider === "pi") {
+    // pi resolves to its bundled cli.js on win32 (spawned through node) or a
+    // direct executable elsewhere. The permission-bridge extension ships at
+    // dist/pi-extensions/ask_permission.ts and is attached next to the launch
+    // args when present.
+    const piArgs = [...options.args];
+    const extPath = fileURLToPath(new URL("./pi-extensions/ask_permission.ts", import.meta.url));
+    if (existsSync(extPath)) piArgs.push("--extension", extPath);
+    const argv = options.command.endsWith(".js")
+      ? [process.execPath, options.command, ...piArgs]
+      : [options.command, ...piArgs];
+    const child = spawn(argv[0], argv.slice(1), providerChildSpawnOptions(options));
+    return new PiRpcDriver(child, options);
   }
 
   const testSeamsEnabled =

@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -122,23 +123,12 @@ test("Codex hook template uses plugin-relative dist paths", () => {
   }
 });
 
-test("Codex marketplace exposes the Git-backed plugin", () => {
+test("the unconfigured fork marketplace cannot install the upstream by mistake", () => {
   const marketplace = readJson(".agents/plugins/marketplace.json");
-  assert.equal(marketplace.name, "subagent-mcp");
-  assert.equal(marketplace.interface.displayName, "subagent-mcp");
-  assert.equal(marketplace.plugins.length, 1);
-  assert.deepEqual(marketplace.plugins[0], {
-    name: "subagent-mcp",
-    source: {
-      source: "url",
-      url: "https://github.com/Heretyc/subagent-mcp.git",
-    },
-    policy: {
-      installation: "AVAILABLE",
-      authentication: "ON_INSTALL",
-    },
-    category: "Productivity",
-  });
+  assert.equal(marketplace.name, "subagent-mcp-pi-adapter");
+  assert.equal(marketplace.interface.displayName, "subagent-mcp Pi adapter");
+  assert.deepEqual(marketplace.plugins, []);
+  assert.doesNotMatch(JSON.stringify(marketplace), /https:\/\/github\.com\/Heretyc\/subagent-mcp\.git/);
 });
 
 function runActivate(home) {

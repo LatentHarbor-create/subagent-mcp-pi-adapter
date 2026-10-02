@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * cli-args.test.mjs — Integration tests for the CLI argument guard in
  * dist/index.js (the `subagent-mcp` bin entry).
@@ -140,6 +141,16 @@ test("--help: usage keeps dashed compatibility aliases", () => {
 // ---------------------------------------------------------------------------
 // update / --update
 // ---------------------------------------------------------------------------
+test("private preparation blocks update, --update and upgrade before registry operations", () => {
+  for (const command of ["update", "--update", "upgrade"]) {
+    const r = runBin([command], { PATH: "", Path: "" });
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /Registry updates are disabled/);
+    assert.doesNotMatch(r.stdout, /npm install|backed up|Update complete/);
+  }
+});
+
+if (!JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).private) {
 test("update: preserves user-edited advanced-ruleset.py", () => {
   const root = mkdtempSync(join(tmpdir(), "subagent-cli-update-"));
   try {
@@ -203,6 +214,7 @@ test("update: preserves user-edited advanced-ruleset.py", () => {
 });
 
 // ---------------------------------------------------------------------------
+}
 // init / --init
 // ---------------------------------------------------------------------------
 test("init: dry-run exits 0 and writes nothing", () => {

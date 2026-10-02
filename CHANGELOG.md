@@ -1,4 +1,39 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Changelog
+
+## 3.2.3
+
+### Added
+
+- Pi provider driver: `launch_agent` can target the Pi coding agent through a
+  dedicated driver that runs `pi --mode rpc`, attaches the shipped
+  ask-permission extension, and normalizes Pi's event stream into the same
+  result shape other providers return.
+- Pi session mode: an `orchestration-mode` selector with `auto`, `on`, and
+  `off` values tunes delegation eagerness for one session. `auto` follows the
+  existing latch and metering regime, `on` forces delegation for the session,
+  and `off` suppresses it. The mode never changes the provider, model, or
+  effort of a launch.
+- Effort three-path parity test: `resolveEffort`, `normalizeEffort`, and
+  `effortAllowed` are exercised against one shared matrix so a change to a
+  single path cannot silently drift from the other two.
+- Injection-text guard: the per-turn session-mode texts are checked to never
+  assert the orchestration state, which is reported solely by the
+  `<subagent-mcp state="...">` hook tag.
+- Approval-context value scan: a parked request's `action_summary` masks
+  well-known credential token shapes in addition to the existing key-name
+  redaction.
+- `check:audit-target`: audit reports must declare the full commit SHA they
+  examined, and the SHA must resolve in the repository.
+- `check:pkg-keys`: `package.json` is scanned for duplicate keys, which
+  `JSON.parse` would otherwise silently collapse to the last value.
+
+### Changed
+
+- `check:versions` also verifies that the top `CHANGELOG.md` entry matches the
+  package version.
+- The `orchestration-mode` selector for the Pi session mode is session-keyed:
+  anonymous session keys are refused rather than sharing one global value.
 
 ## 3.2.2
 

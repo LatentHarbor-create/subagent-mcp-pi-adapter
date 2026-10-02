@@ -1,228 +1,101 @@
-# subagent-mcp
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
+# subagent-mcp Pi adapter
 
-[![npm version](https://img.shields.io/npm/v/@heretyc/subagent-mcp?label=npm)](https://www.npmjs.com/package/@heretyc/subagent-mcp)
-[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-[![node](https://img.shields.io/node/v/@heretyc/subagent-mcp)](https://www.npmjs.com/package/@heretyc/subagent-mcp)
-[![CI](https://github.com/Heretyc/subagent-mcp/actions/workflows/claude-routine.yml/badge.svg)](https://github.com/Heretyc/subagent-mcp/actions/workflows/claude-routine.yml)
+Pi workers for Codex through a local MCP stdio server. The adapter keeps a Pi RPC process alive across messages, applies the shared permission bridge, and reports completion after the Pi session settles. Codex native subagents remain an independent channel.
 
-## Core Premise
+This is an Apache-2.0 derivative of [Heretyc/subagent-mcp](https://github.com/Heretyc/subagent-mcp). See [LICENSE](LICENSE), [NOTICE](NOTICE), and [MODIFICATIONS.md](MODIFICATIONS.md). The package is private while GitHub owner and publishing metadata are pending.
 
-subagent-mcp is an MCP stdio server that turns an AI coding assistant (Claude
-Code, Codex, Gemini CLI) into a manager of local Claude and Codex sub-agents on
-macOS, Linux, and Windows. It orchestrates the locally authenticated `claude`
-and `codex` CLIs you already signed into, and can route tasks to direct API
-providers (Claude Messages API and OpenAI-compatible) configured in
-`providers.jsonc`. Provider credentials stay out of config: `providers.jsonc`
-names env vars, and key values live in the adjacent gitignored `.env`. API HTTP
-is confined to `src/providers/provider-client.ts`.
+See [PRIVACY.md](PRIVACY.md) for the publication boundary and generic configuration examples.
 
-![subagent-mcp long-horizon session demonstration](docs/images/smcp-example.png)
+## Behavior
 
-*7 h 38 min one-shot coding session, several hundred tool calls, Fable 5, July 15 2026 - 41% context used, no auto-compaction, orchestrated via subagent-mcp.*
+- Smart MCP routing selects only `pi / pi-balanced / max`.
+- `pi-balanced` is an adapter profile, not the physical model name. Pi uses its locally configured provider and model; the adapter requests thinking `max`.
+- MCP orchestration defaults OFF. OFF does not disable Pi launches allowed by the separate Pi preference.
+- Pi AUTO weighs task fit and coordination cost. ON actively looks for beneficial bounded delegation. OFF prevents automatic Pi launches. None requires delegation merely because a task contains many files.
+- The adapter does not gate or redirect Codex native subagents.
+- `agent_settled` completes a turn. Follow-up input uses `prompt` with `streamingBehavior: followUp`, so an idle Pi starts work and an active Pi queues it.
+- Permission requests use the shared verdict, ceiling, and pending-approval bridge. A rejected setting operation does not establish that every MCP tool is unavailable.
 
-The orchestrator monitors but does not read or write project files itself. Work
-is delegated to fresh sub-agents, so the orchestrator keeps summaries instead
-of raw file context. The main invariants are:
+## Prerequisites
 
-- one machine-global, provider-agnostic concurrency cap (default 20, minimum 10)
-- fail-safe orchestration ON on hookless hosts
-- state authority only from harness-verified `<subagent-mcp state="...">` tags
-- `launch_agent` as the only supported sub-agent launch channel in both states
-- setup/init defense-in-depth suppression for known native host agent launchers
-- sub-agents gated by default with permission ceiling `auto`
-- automatic model, provider, and effort routing per task category
+- Node.js 24, npm, and Python 3 on PATH. The Python ruleset runs during MCP launches.
+- Pi coding agent 1.0.0, installed and configured locally.
+- Codex with MCP stdio support.
 
-## Install
-
-### What You Need First
-
-- Node.js 20 or newer (`node --version`)
-- `claude` CLI, installed and signed in (`claude --version`)
-- `codex` CLI, installed and signed in (`codex --version`; optional if you only
-  use Claude or Gemini as the host)
-
-Building from source needs extra developer tools. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
-
-### Install The Package
-
-Marketplace plugin for Claude Code:
-
-```bash
-claude plugin marketplace add Heretyc/subagent-mcp
-claude plugin install subagent-mcp@subagent-mcp
+```sh
+npm install -g @earendil-works/pi-coding-agent@1.0.0
+pi --version
 ```
 
-Marketplace plugin for Codex:
+Configure and sign in to the desired provider using Pi. Do not put credentials in this repository. The adapter integration is tested with Pi 1.0.0; newer Pi versions need verification.
 
-```bash
-codex plugin marketplace add Heretyc/subagent-mcp
-codex plugin add subagent-mcp@subagent-mcp
+## Build from source
+
+From this checkout:
+
+```sh
+npm ci --ignore-scripts
+npm run build
+npm run test:pi
 ```
 
-Or Codex MCP registration:
+`npm test` runs the broader inherited test suite. Dependency installation does not register the MCP server or change Codex settings.
 
-```bash
-codex mcp add subagent-mcp -- node /abs/path/to/subagent-mcp/dist/index.js
+## Register the MCP server
+
+Use an absolute path to your built `dist/index.js`:
+
+```toml
+[mcp_servers.subagent-mcp]
+command = "node"
+args = ["/absolute/path/to/subagent-mcp-pi-adapter/dist/index.js"]
+enabled = true
 ```
 
-Or install the npm package globally:
+On Windows, a TOML literal string avoids backslash escaping:
 
-```bash
-npm install -g @heretyc/subagent-mcp
+```toml
+args = ['C:\projects\subagent-mcp-pi-adapter\dist\index.js']
 ```
 
-Organizations pinning the package through GitHub Packages should see
-[docs/registration/prerequisites-and-install.md](docs/registration/prerequisites-and-install.md).
+See [examples/codex-config.toml](examples/codex-config.toml). If a server with this name already exists, review its entry rather than adding a duplicate. Restart the host after changing its MCP configuration.
 
-### Wire It Into Your Assistant
+## Pi session preference
 
-```bash
-subagent-mcp setup
+Use [examples/pi-session-policy.md](examples/pi-session-policy.md) in the applicable Codex instructions to ask once per new session for AUTO, ON, or OFF. Until answered, do not automatically launch Pi. An existing answer can be followed directly; recording it through `orchestration-mode` is optional and may require host tool approval.
+
+MCP orchestration is a separate setting and defaults OFF without an enable question. Do not require orchestration ON before suitable Pi delegation. Pi OFF never disables Codex native subagents.
+
+## Block private directories
+
+The ruleset accepts `SUBAGENT_PI_BLOCKED_ROOTS`, a JSON array of absolute directory paths. It vetoes MCP launches for those directories and descendants. An absent value means an empty list. Invalid configuration fails the ruleset; it does not silently route elsewhere.
+
+```toml
+[mcp_servers.subagent-mcp.env]
+SUBAGENT_PI_BLOCKED_ROOTS = '["C:/private-projects", "C:/confidential"]'
 ```
 
-Installing the package only ships the program. It does not connect anything on
-its own. `subagent-mcp setup` finds your Claude Code, Codex, or Gemini install
-and registers the supported server, hook, and native-agent suppression config
-for that host. For Claude Code it also registers or wraps `statusLine` so the
-hook can read Claude's authoritative context percentage without replacing your
-custom statusline, writes
-`settings.json` `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = "90"`, and deploys the
-`smcp-handoff` Agent Skill to your Claude user scope.
-Preview first with `subagent-mcp setup --dry-run`.
+This is an additional launch restriction. Honor project instructions even if a directory is not in this list. It does not alter the Codex native channel.
 
-For provider config, run `subagent-mcp config init`, edit the generated `.env`
-keys under your subagent-mcp config home, then run
-`subagent-mcp config validate`. See [skills/smcp-help/SKILL.md](skills/smcp-help/SKILL.md)
-for details. Once the server is running, use the `configure` MCP tool (or the
-`/smcp:config` skill) to list, read, or update settings by canonical key without
-leaving the assistant.
+## Permission scope and codemode
 
-### Restart, Then Turn On The Invariant
+The permission bridge transports structured requests from the shipped `ask_permission` extension. Safe allow, protected-path deny, pending allow, and pending deny are tested. This is not comprehensive operating-system isolation or proof that every tool execution is automatically intercepted. Pi commands execute with the child process's host permissions.
 
-Restart your Claude Code or Codex session so it picks up the new tools. On
-Codex, run `/hooks` and trust the new hook. Then, recommended:
+This adapter does not enable codemode. Keep Pi codemode disabled for the documented configuration. Codemode execution interception is outside this integration's verified scope.
 
-```bash
-subagent-mcp init --global
+## Optional local verification
+
+```sh
+node scripts/verify_pi_rpc.mjs --pi-cli /absolute/path/to/pi/dist/bundle/cli.js --output /outside/repository/pi-verification.json
 ```
 
-This writes a managed "always delegate" rule block into your global assistant
-config once. For one project only, use
-`subagent-mcp init --root /path/to/project`. Full per-platform wiring (Gemini
-CLI, Claude Desktop, manual setup) is in
-[docs/registration.md](docs/registration.md).
+The script uses local Pi configuration and runs synthetic permission dialogues without performing the represented file operations. Add `--model-smoke` only when a real provider request is authorized; it incurs a small model request and checks the configured physical model and thinking level. It does not copy or print auth values.
 
-Operation guide (tools, swarms, concurrency): [README/operation.md](README/operation.md).
+## Development and upstream
 
-## Configuration
+See [CONTRIBUTING.md](CONTRIBUTING.md). [Inherited engine documentation](README.upstream.md) describes the general subagent-mcp framework; this README defines the Pi-only launch profile. Inherited npm and marketplace installation examples install the upstream package, not this private fork preparation.
 
-Machine-wide defaults live in `global-subagent-mcp-config.jsonc`, installed
-beside the compiled server and re-read on every `launch_agent`. It controls the
-global concurrency cap, update checks, permission ceiling, escalation behavior,
-strict read-parity logging, and Codex sandbox networking.
+No registry publisher or external-agent workflow is configured in this preparation. Registry update checks and the `update`, `--update`, and `upgrade` commands are disabled while the package is private. The Codex marketplace catalog stays empty until the fork URL is supplied; use the direct MCP registration above. A GitHub repository name, owner, and publication decision must be supplied separately.
 
-Context-coaching preferences live only in `~/.subagent-mcp/settings.json` (or
-`settings.local.json`): `contextCoaching` defaults to `true`. When enabled,
-the hook delivers optional per-turn planning and goal-capture coaching.
-Disabling it suppresses that coaching only; mandatory lifecycle injections
-(handoff preparation at 80%, compaction detection, and the one-turn read
-mandate) fire regardless.
-
-User and repo permission files can only tighten or add scoped permissions on top
-of the global ceiling. See [README/configuration.md](README/configuration.md)
-for the full key table, precedence rules, and mode summary.
-
-## Context and Handoff Lifecycle
-
-The implemented Claude and Codex hooks track context utilization each turn. At
-**80%** they mandate a fresh handoff write: a record with `version = 2`,
-`lifecycle = "prepared"`, and a random generation ID. This sits 10 points before
-the 90% auto-compaction boundary, ensuring a current snapshot exists before
-compaction clears context.
-
-Compaction detection runs on the same per-turn path as all other metering. A
-drop of **10 or more percentage points** from a prior sample at or above 80%,
-within the same session, is necessary but not sufficient: the current sample
-must ALSO carry a fresh structural compaction-generation proof. For Claude that
-proof comes only from the newest main-chain system `compact_boundary`: that
-exact boundary must have `compactMetadata.trigger = "auto"` and a canonical
-top-level UUID. A newer manual or invalid boundary masks every older valid auto
-boundary. For Codex it is a freshly compacted context-window identity
-(`window_id` / `window_number`). Codex exposes no auto-versus-manual cause, so a
-manual `/compact` at or above 80% with a qualifying drop is indistinguishable
-and does trigger. The last-seen generation persists in the metering record, so
-an unchanged proof is rejected as a replay and each compaction fires the
-lifecycle at most once. Pairs that fail session, harness, source, model,
-context-window, sample-sequence, freshness, current-sample, or sub-agent checks
-are rebaselined, not flagged.
-
-On confirmed compaction the record enters `session_handoff_required`. The hook
-then injects a **one-turn handoff-read mandate** exactly once and moves the
-record to `resuming`. Automatic transition eligibility requires all four runtime
-predicates: `version = 2`, `lifecycle = "prepared"`, a non-empty `generation`,
-and `created_by_session` matching the current session. Other readable records
-are ineligible for that automatic transition. After a successful `handoff-read`,
-the caller must ask exactly four structured confirmation questions before
-acting. With a current session key, the read stamps the reader fields and moves
-any version-2 record to `working`; readable records with another or no version
-retain their lifecycle schema.
-
-Enforcement is **directive-only**: no tool-level gates are added in any
-lifecycle state.
-
-## Permissions
-
-Launched sub-agents run gated by default. Set `permissionsCeiling` in
-`global-subagent-mcp-config.jsonc`:
-
-| Mode | What a sub-agent can do |
-|---|---|
-| `auto` | Default. Safe reads auto-allow, dangerous actions auto-deny, everything else parks for your decision. |
-| `manual` | Same, but every non-denied action parks for a decision. |
-| `yolo` | No gating at all. |
-
-When a sub-agent's action parks, its status becomes `permission_requested` and
-it appears in `poll_agent`, `list_agents`, and `wait`. Answer it with:
-
-```text
-respond_permission(agent_id="...", decision="allow" | "deny", reason="...")
-```
-
-One-time only. Omit `request_id` to answer the oldest pending request.
-Unanswered requests auto-deny after 5 minutes. Full spec:
-[docs/spec/permissions.md](docs/spec/permissions.md).
-
-## Basic Debugging
-
-- **An agent looks stuck.** A quiet agent is usually still alive. After about 10
-  minutes with no output an agent is marked `stalled`. Prefer `wait` or another
-  `poll_agent` over killing it.
-- **Cap reached.** Use `list_agents` to see what is running and `kill_agent` on
-  work you no longer need. Raising `globalConcurrentSubagents` also works.
-- **Logs.** Agent output is available through `poll_agent`. Server diagnostics
-  go to the host MCP server log on stderr.
-- **Install or config looks wrong.** Run `subagent-mcp doctor` for the
-  diagnostic suite; it prompts before any fix. `subagent-mcp rollback` restores
-  the most recent config backup. See [skills/smcp-doctor/SKILL.md](skills/smcp-doctor/SKILL.md).
-
-## Documentation
-
-| Document | Contents |
-|---|---|
-| [docs/spec/arch-rationale.md](docs/spec/arch-rationale.md) | Design rationale |
-| [docs/registration.md](docs/registration.md) | Per-platform setup |
-| [docs/install/_INDEX.md](docs/install/_INDEX.md) | Install guide map |
-| [docs/tools.md](docs/tools.md) | Tool reference |
-| [docs/usage.md](docs/usage.md) | Model and effort matrix |
-| [docs/SPEC.md](docs/SPEC.md) | Technical specification |
-| [README/configuration.md](README/configuration.md) | Configuration keys and precedence |
-| [docs/spec/permissions.md](docs/spec/permissions.md) | Permission system |
-| [docs/reference/status-lifecycle.md](docs/reference/status-lifecycle.md) | Agent status meanings |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Developer guide |
-
-## License
-
-Apache-2.0. Copyright 2026 Lexi Blackburn (https://github.com/Heretyc/).
-
-See [LICENSE](LICENSE).
+繁體中文說明：[README.zh-TW.md](README.zh-TW.md).

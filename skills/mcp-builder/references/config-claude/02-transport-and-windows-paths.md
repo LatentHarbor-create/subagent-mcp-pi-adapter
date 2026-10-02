@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Claude Config: Transport Types & Windows Path Fixes
 
 Part of `config-claude.md`. Source: code.claude.com/docs/en/mcp [S9], github.com/anthropics/claude-code/issues/26073 [S11]
@@ -12,7 +13,7 @@ Part of `config-claude.md`. Source: code.claude.com/docs/en/mcp [S9], github.com
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\Lexi\\projects"],
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\example-user\\projects"],
       "env": {}
     }
   }

@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * native-suppression.test.mjs - native sub-agent suppression reconcilers.
  *
@@ -212,20 +213,22 @@ decision = "deny"
   assert.equal(geminiNativeAgentPolicyOk(borrowedDeny), false);
 });
 
-test("ensureNativeAgentSuppression: writes only fake home, backs up existing files, idempotent", () => withHome((home) => {
+test("ensureNativeAgentSuppression: never changes Codex native-agent settings", () => withHome((home) => {
   writeJson(join(home, ".claude", "settings.json"), { keep: true });
   mkdirSync(join(home, ".codex"), { recursive: true });
-  writeFileSync(join(home, ".codex", "config.toml"), `model = "gpt-5"\n`, "utf8");
+  const codexOriginal = `model = "gpt-5"\n[features]\nmulti_agent = true\n`;
+  writeFileSync(join(home, ".codex", "config.toml"), codexOriginal, "utf8");
   writeJson(join(home, ".gemini", "settings.json"), { mcpServers: { keep: {} } });
 
   const first = ensureNativeAgentSuppression(home, ["claude", "codex", "gemini"]);
   assert.equal(first.every((r) => r.changed), true);
+  assert.equal(first.some((r) => r.host === "codex"), false);
   assert.equal(existsSync(join(home, ".claude", "settings.json")), true);
-  assert.equal(existsSync(join(home, ".codex", "config.toml")), true);
+  assert.equal(readFileSync(join(home, ".codex", "config.toml"), "utf8"), codexOriginal);
   assert.equal(existsSync(join(home, ".gemini", "settings.json")), true);
   assert.equal(geminiNativeAgentPolicyOk(readFileSync(join(home, ".gemini", "policies", GEMINI_NATIVE_AGENT_POLICY), "utf8")), true);
   assert.equal(readdirSync(join(home, ".claude")).some((f) => f.includes(".bak-native-agent-")), true);
-  assert.equal(readdirSync(join(home, ".codex")).some((f) => f.includes(".bak-native-agent-")), true);
+  assert.equal(readdirSync(join(home, ".codex")).some((f) => f.includes(".bak-native-agent-")), false);
   assert.equal(readdirSync(join(home, ".gemini")).some((f) => f.includes(".bak-native-agent-")), true);
 
   const second = ensureNativeAgentSuppression(home, ["claude", "codex", "gemini"]);

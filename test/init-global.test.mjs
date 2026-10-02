@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * init-global.test.mjs - Unit tests for `subagent-mcp init --global`.
  *
@@ -97,7 +98,7 @@ await test("global targets: create, idempotent upsert, remove, and dry-run stay 
   }
 });
 
-await test("runInit --global writes native-agent guards only in fake home", async () => {
+await test("runInit --global leaves Codex native-agent settings untouched", async () => {
   const fakeHome = mkdtempSync(join(tmpdir(), "sm-init-global-run-"));
   const oldHome = process.env.HOME;
   const oldUserProfile = process.env.USERPROFILE;
@@ -106,7 +107,7 @@ await test("runInit --global writes native-agent guards only in fake home", asyn
   try {
     const code = await runInit(["--global"]);
     assert.equal(code, 0);
-    assert.match(readFileSync(join(fakeHome, ".codex", "config.toml"), "utf8"), /multi_agent = false/);
+    assert.equal(existsSync(join(fakeHome, ".codex", "config.toml")), false);
     const settings = JSON.parse(readFileSync(join(fakeHome, ".claude", "settings.json"), "utf8"));
     assert.deepEqual(settings.permissions.deny, ["Agent"], "global init writes only the canonical deny rule");
     assert.match(readFileSync(join(fakeHome, ".gemini", "settings.json"), "utf8"), /"enableAgents": false/);

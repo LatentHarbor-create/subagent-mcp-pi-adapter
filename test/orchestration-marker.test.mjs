@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * orchestration-marker.test.mjs - Unit tests for the shared marker module.
  */
@@ -108,7 +109,7 @@ test("default OFF; session disable records are isolated and TTL-GC'd", () => {
   const sessB = `sessB-${cwdHash(dir)}`;
   const expiredSess = `expired-${cwdHash(dir)}`;
   try {
-    assert.equal(isActive(dir), true, "fresh keyless check is active");
+    assert.equal(isActive(dir), false, "fresh keyless check defaults OFF");
     assert.equal(isActive(dir, sessA), false, "fresh session key starts inactive");
     writeEnable(sessA);
     writeEnable(sessB);
@@ -186,7 +187,7 @@ test("anonymous owner keys are cadence-only and cannot disable orchestration", (
     assert.equal(isSessionScopedKey("session-1"), true);
     writeDisable(anon);
     assert.equal(existsSync(disablePath(anon)), false, "writeDisable ignores anonymous keys");
-    assert.equal(isActive(dir, anon), true, "isActive ignores anonymous disable authority");
+    assert.equal(isActive(dir, anon), false, "anonymous owner cannot activate orchestration");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

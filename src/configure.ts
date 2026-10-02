@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * configure - one MCP tool over one literal key table.
  *
@@ -129,7 +130,7 @@ function sanitizeNode(node: unknown, secret: boolean): unknown {
 }
 
 /** THE single sanitizer. Every response goes through it before JSON.stringify. */
-function redactPayload(payload: unknown): unknown {
+export function redactPayload(payload: unknown): unknown {
   return sanitizeNode(payload, false);
 }
 

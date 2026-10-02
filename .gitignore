@@ -1,3 +1,4 @@
+# Modified for the subagent-mcp Pi adapter fork.
 node_modules/
 dist/
 src/ruleset-scaffold.ts
@@ -7,3 +8,14 @@ src/config-scaffold.ts
 claude-cicd-policy-pack.zip
 **/__pycache__/
 *.bak-init-*
+
+# Local integration configuration and verification artifacts
+.env.*
+!.env.example
+auth.json
+settings.local.json
+.pi/
+analysis/
+backups/
+*.tgz
+*.zip

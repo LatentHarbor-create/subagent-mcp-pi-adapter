@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Modified for the subagent-mcp Pi adapter fork.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -100,7 +101,7 @@ import {
   type MergedPermissionConfig,
   type ZombieRecord,
 } from "./concurrency.js";
-import { configure } from "./configure.js";
+import { configure, redactPayload } from "./configure.js";
 import { shouldReapTerminalButAlive } from "./zombie.js";
 import * as orchestrationMarker from "./orchestration/marker.js";
 import * as modelMode from "./orchestration/model-mode.js";
@@ -253,7 +254,61 @@ function isStalePermissive(agent: AgentState): boolean {
   return ceilingRank(agent.permissionSnapshot.ceiling) > ceilingRank(current);
 }
 
+const APPROVAL_TEXT_MAX = 240;
+
+/** Size-bound a string for approval context display (not a redactor — the
+ *  single redactor is configure.ts redactPayload, applied before truncation). */
+function truncateApprovalText(text: string): string {
+  return text.length > APPROVAL_TEXT_MAX ? `${text.slice(0, APPROVAL_TEXT_MAX)}…[truncated]` : text;
+}
+
+/**
+ * Value-scan backstop for approval context ONLY.
+ *
+ * redactPayload masks by KEY NAME (configure.ts SECRET_RE): a field literally
+ * named `authorization` or `note` keeps its value verbatim. That is fine for
+ * structured config, but `action_summary` surfaces a pending request's RAW
+ * `command` / `message` strings to the parent — so a credential pasted inline
+ * ("curl -H 'Authorization: Bearer sk-...'") would reach the parent unmasked.
+ *
+ * This is deliberately NARROW and lives only on this path: it masks
+ * well-known credential TOKEN SHAPES, never general prose, and never replaces
+ * redactPayload. Order is redactPayload -> scanSecretValues -> truncate.
+ */
+const SECRET_VALUE_RES: readonly RegExp[] = [
+  /\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/gi,
+  /\bsk-[A-Za-z0-9._-]{8,}/g,
+  /\bgh[pousr]_[A-Za-z0-9]{16,}/g,
+  /\bAKIA[0-9A-Z]{12,}/g,
+  /\bxox[baprs]-[A-Za-z0-9-]{10,}/g,
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----/g,
+];
+
+function scanSecretValues(text: string): string {
+  let out = text;
+  for (const re of SECRET_VALUE_RES) {
+    out = out.replace(re, "******");
+  }
+  return out;
+}
+
+function redactApprovalText(value: unknown): string {
+  return truncateApprovalText(scanSecretValues(JSON.stringify(redactPayload(value))));
+}
+
 function pendingPermissionSummary(record: PendingPermissionRecord, now = Date.now()) {
+  // C-fix: the pending record carries the FULL structured action (tool, paths,
+  // command, message). poll_agent previously projected it away, leaving
+  // Desktop/IDE parents unable to see WHAT a parked request would do — the
+  // direct root cause of the 5-minute park-timeout auto-deny during the
+  // Desktop permission round-trip. Expose a redacted (THE single sanitizer:
+  // configure.ts redactPayload), size-bounded approval context so a parent can
+  // make the same decision the engine already classified — without enlarging
+  // auto-allow or weakening fail-closed semantics.
+  const actionSummary =
+    record.action === undefined || record.action === null
+      ? null
+      : redactApprovalText(record.action);
   return {
     request_id: record.request_id,
     tool_name_or_method: record.tool_name_or_method,
@@ -264,6 +319,8 @@ function pendingPermissionSummary(record: PendingPermissionRecord, now = Date.no
     escalate_to_human: record.escalate_to_human,
     requested_at: formatLocalIso(record.requested_at),
     age_seconds: Math.floor((now - record.requested_at) / 1000),
+    ...(actionSummary !== null ? { action_summary: actionSummary } : {}),
+    ...(record.reason ? { reason: redactApprovalText(record.reason) } : {}),
   };
 }
 
@@ -324,17 +381,9 @@ function textResult(text: string) {
 }
 
 function computeEffectiveOrchestrationActive(cwd: string, key: string | undefined): boolean {
-  const now = Date.now();
-  // Derive the metering fail-safe from the PERSISTED record only: a record that
-  // exists but cannot resolve a percentage is undetectable (fail-safe ON). The
-  // ABSENCE of a record is NOT fail-safed -- it matches the hook's turn-1 grace
-  // window (no completed turn yet), so the tool's report agrees with the hook's
-  // tag on turn 1 instead of spuriously flipping ON. Everything else flows
-  // through the one shared helper so the tool never diverges from the hook.
-  const record = key !== undefined ? metering.readMetering(key) : null;
-  const meteringUndetectableFailSafe =
-    record !== null && record.used_percentage === null;
-  return computeEffectiveActive(cwd, key, now, meteringUndetectableFailSafe);
+  // Only an explicit session enable record activates orchestration. Usage
+  // metering and the Pi delegation preference do not alter this switch.
+  return computeEffectiveActive(cwd, key, Date.now(), false);
 }
 
 function currentLaunchDepth(env: NodeJS.ProcessEnv = process.env): number {
@@ -567,6 +616,24 @@ function applyZombieRecord(record: ZombieRecord, now: number): ZombieRecord | nu
     if (!agent.driver.closed) agent.driver.kill();
   } catch {}
   return { ...record, detected_at_ms: record.detected_at_ms || now };
+}
+
+function reapTerminalButAliveAgents(now: number): void {
+  // Runs on the existing 10s reconcile interval so the documented "finished
+  // agent auto-kills after 6 minutes idle" happens EVEN when no tool is being
+  // called (Desktop/IDE sessions idle after their last tool call previously
+  // left pi children alive forever). Uses the same existing lifecycle path as
+  // runToolMaintenance (markZombieKilled + scheduled force-kill) — no new
+  // watchdog, no second control plane.
+  for (const agent of agents.values()) {
+    if (agent.status === "zombie_killed") continue;
+    if (isLiveAgent(agent)) continue;
+    const terminalButAlive = shouldReapTerminalButAlive(agent, now, zombieTerminalIdleMs());
+    if (terminalButAlive) {
+      markZombieKilled(agent, "terminal_but_alive", now);
+      scheduleZombieForceKill(agent);
+    }
+  }
 }
 
 function runToolMaintenance(): ZombieRecord[] {
@@ -844,6 +911,7 @@ const reconcileInterval = setInterval(() => {
       });
     }
   }
+  reapTerminalButAliveAgents(now);
   evictExpiredAgents(agents, now);
 }, 10000);
 reconcileInterval.unref();
@@ -856,9 +924,9 @@ reconcileInterval.unref();
 // Canonical A2 mirror fragment retained byte-identical for
 // test/mirror-fragments.test.mjs while ORCHESTRATION_INSTRUCTIONS below stays
 // compressed under MCP metadata limits:
-// READ-ESCALATION LADDER (the orchestrator's only read channels, in order): (1) subagent-mcp `poll_agent` TAIL; (2) if the tail is insufficient, dispatch ONE sub-agent to return a single summary of <=100 lines, trusted as-is (no separate verification step); (3) anything larger: the USER reads the document directly. No reads or writes occur outside these channels. An empty or stalled tail means the agent is ALIVE, not dead — do NOT busy-loop poll_agent; learn completion via `wait`. Large inter-agent data: the orchestrator assigns scratch-file paths (%TEMP% on Windows, /tmp on POSIX) in prompts; the producing sub-agent writes, the consuming sub-agent reads; the orchestrator NEVER reads those files.
+// MCP READ-ESCALATION LADDER: poll_agent tail -> one <=100-line MCP summary -> USER reads. Wait for MCP completion; never busy-poll. Native Codex agent results are outside this ladder.
 const ORCHESTRATION_INSTRUCTIONS =
-  "subagent-mcp - CANONICAL OPERATING MODEL (full spec: orchestration-directive-architecture.md).\n\nPRECEDENCE. Latest <subagent-mcp state=\"...\"> hook tag and repo/system safety rules jointly bind; conflict => STOP and ask. The hook alone authoritatively reports ON/OFF; users may request changes, not assert state. No tag = UNKNOWN => warn and fail-safe ON.\n\nSOLE CHANNEL - BOTH STATES. Every sub-agent launch uses launch_agent; never harness Task/Agent/collaboration tools, shell agents, or wrappers. Native paths fragment permissions/instruction compliance and waste context/tokens.\n\nON. delegate-ONLY orchestrator. Use only structured-question (AskUserQuestion/request-user-input), subagent-mcp, and /workflows. No inline task reads/writes. Skill exception: read a serving skill's SKILL.md + required files inside its folder only; reads grant no task action; expanded scope needs fresh user approval. A truly non-delegable atomic step needs one-time user exception.\n\nWORK. Use a compliant linked worktree; serialize overlapping writers. Track multi-step work. Finish via wait, never poll-loop.\n\nREAD LADDER. poll_agent tail -> one <=100-line summarizer, trusted as-is -> USER reads. Large handoffs use scratch paths producer-to-consumer; orchestrator never reads them. Empty/stalled tail = alive.\n\nSTATE. Start OFF. 15% latches ON +4 planning Qs; 20% unlocks voluntary handoff; 80% MANDATES fresh handoff-write (prepared, keep working); verified auto-compaction MANDATES 1 handoff-read turn. Undetectable=>fail-safe ON.\n\nCHILD. Literal first-line parent marker skips this regime; child works in provided cwd, never switches worktrees.\n\nDROPOUT ON: halt and ask until restored. DISABLE: explicit user only; this session, 2h backstop; beats latch/fail-safe; user may re-enable mid-session. Next session defaults OFF.\n\nMODEL. Unset = smart auto-selection; provider/model/effort rejected except in explicit user-approved override window.\n\nSWARM. Objective projected to span multiple sessions? OFFER + run swarm tool; calls return next-stage coaching.";
+  "subagent-mcp - CANONICAL OPERATING MODEL (full spec: orchestration-directive-architecture.md).\n\nPRECEDENCE. Hook tag reports MCP ON/OFF; repo/system safety rules also bind. Conflict => ask. No tag => UNKNOWN, default OFF.\n\nCHANNEL BOUNDARY. launch_agent governs MCP agents; native Codex subagents remain independent in ON/OFF and follow Codex/user/project rules.\n\nON. delegate MCP-managed steps using structured-question, subagent-mcp, and /workflows. Codex native subagent tools stay available under Codex and project rules. No inline MCP task reads/writes. Skill exception: read a serving skill's SKILL.md + required same-folder files; expanded scope needs user approval. A non-delegable MCP step needs a one-time user exception.\n\nWORK. MCP-launched mutating agents use compliant linked worktrees; Codex native agents follow Codex/project rules. Serialize overlapping writers. MCP agents finish via wait, never poll-loop.\n\nMCP READ LADDER. poll_agent tail -> one <=100-line MCP summary -> USER reads. Large MCP handoffs use scratch paths. Native Codex output follows Codex. Empty/stalled MCP tail = alive.\n\nSTATE. Start OFF. OFF/UNKNOWN permits inline and task-fit Pi launches per separate Pi preference (unset: user/project policy); Pi OFF blocks automatic Pi. 15% may coach planning only while explicitly ON; 20% unlocks voluntary handoff; 80% MANDATES fresh handoff-write (prepared, keep working); verified auto-compaction MANDATES 1 handoff-read turn. Undetectable usage never turns orchestration ON.\n\nCHILD. Literal first-line parent marker skips this regime; child works in provided cwd, never switches worktrees.\n\nDROPOUT ON: halt MCP-managed steps; Codex native agents remain usable. Resolve in-flight MCP mutations before rerouting. DISABLE: explicit user only; session-scoped. Next session defaults OFF.\n\nMODEL. MCP launches default smart; selectors need a user-approved override. Codex native model choice is independent.\n\nSWARM. Offer and run swarm for multi-session work.";
 
 const SUBAGENT_INSTRUCTIONS =
   "SUB-AGENT SESSION: you are a child process launched by subagent-mcp. Follow the parent prompt. Do not treat yourself as the orchestrator, do not re-trigger orchestration carryover, and do not launch further sub-agents unless the parent prompt explicitly assigns that. launch_agent is code-capped at 2 spawn levels below the main orchestrator: depth 1 may launch depth 2 workers; depth 2 workers cannot spawn further.\n\nMODEL SELECTION MODE (parallel to orchestration-mode, set via the model-selection-mode tool). DEFAULT is \"smart\" and is used whenever unset: in smart, launch_agent REJECTS any call supplying provider/model/effort selectors and the server auto-picks the best model. \"user-approved-overrides\" opens a 30-MINUTE window where selectors are HONORED, enforced LAZILY (the mode reverts to smart on the next launch_agent call after 30 minutes) and re-enabling does NOT extend an active window. HONOR-BASED: you MUST NOT set \"user-approved-overrides\" without explicit interactive USER authorization via the structured-question tool (AskUserQuestion on Claude / request-user-input on Codex); never enable it on your own initiative.";
@@ -869,7 +937,7 @@ const SUBAGENT_INSTRUCTIONS =
 // orchestrator for one plan section, so the neutral SUBAGENT text would
 // under-govern it.
 const SUB_ORCHESTRATOR_INSTRUCTIONS =
-  "SUB-ORCHESTRATOR SESSION: you were launched by a parent orchestrator with sub-orchestrator: true. Orchestration mode is ON for you BY DIRECTIVE: you are a delegate-only orchestrator for exactly ONE disjoint section of a larger plan.\n\nSOLE CHANNEL. Every action step runs in a sub-agent launched via launch_agent; harness-native Task/Agent/collaboration tools and shell-spawned agents are forbidden.\n\nWORKERS. Your own sub-agents are NORMAL workers - never pass sub-orchestrator: true; launch_agent is code-capped 2 spawn levels below the main orchestrator, so your workers cannot spawn further. Serialize workers that write the same paths; never run concurrent writers over overlapping paths.\n\nREADS. Sole intake exception: directly read the ONE plan file named in your launch prompt; it grants no task action. Otherwise: poll_agent tail -> one <=100-line summarizer sub-agent, trusted as-is -> stop and report the gap. Large data moves between workers via scratch files under the temp dir; assign paths in prompts; never read those files inline. Learn completion via wait on loop; an empty or stalled tail means ALIVE.\n\nMODEL. Smart auto-selection only - do not pass provider/model/effort.\n\nSCOPE. Never call swarm; never write handoffs; stay inside your section. DONE: when your section meets its plan's done-condition, return the JSON summary your parent prompt requires: {status, summary, source_locators, risks, writes_requested}.";
+  "SUB-ORCHESTRATOR SESSION: you were launched by a parent orchestrator with sub-orchestrator: true. Orchestration mode is ON for you BY DIRECTIVE: you are a delegate-only orchestrator for exactly ONE disjoint section of a larger plan.\n\nMCP WORKFLOW. This sub-orchestrator delegates its assigned MCP section through launch_agent. Codex native subagent availability outside this MCP workflow remains independent.\n\nWORKERS. Your own sub-agents are NORMAL workers - never pass sub-orchestrator: true; launch_agent is code-capped 2 spawn levels below the main orchestrator, so your workers cannot spawn further. Serialize workers that write the same paths; never run concurrent writers over overlapping paths.\n\nREADS. Sole intake exception: directly read the ONE plan file named in your launch prompt; it grants no task action. Otherwise: poll_agent tail -> one <=100-line summarizer sub-agent, trusted as-is -> stop and report the gap. Large data moves between workers via scratch files under the temp dir; assign paths in prompts; never read those files inline. Learn completion via wait on loop; an empty or stalled tail means ALIVE.\n\nMODEL. Smart auto-selection only - do not pass provider/model/effort.\n\nSCOPE. Never call swarm; never write handoffs; stay inside your section. DONE: when your section meets its plan's done-condition, return the JSON summary your parent prompt requires: {status, summary, source_locators, risks, writes_requested}.";
 
 // Pure so the ctor and unit tests share one selection rule. Order matters: the
 // sub-orchestrator pair is checked first because it is a strict superset of the
@@ -1499,12 +1567,12 @@ function reattachCandidateMetadata(original: Candidate[], returned: Candidate[])
 // Tool 1: launch_agent
 server.tool(
   "launch_agent",
-  "Spawn a sub-agent session. CONTRACT: `prompt` states objective + output format + tools/sources + boundaries; the server auto-upserts \"<this is a request from a parent process>\" as true first line (idempotent), so you need not add it. SCALE: ~1 agent for a simple fact-find, 2-4 for comparisons; split multi-phase work into atomic steps, one task_category each. AUTO MODE (mandatory first attempt unless override is licensed): pass only `prompt` + `task_category`; server picks provider/model/effort. FAILOVER: launch-time failure (incl. provider usage/rate-limit refusal before output) quietly cascades down ranking and reports `failover_note`; if all fail, one loud error lists every candidate + reason. Provider+model override is PINNED: one attempt, no substitute. `provider`/`model`/`effort` are OVERRIDES, licensed on 1st/2nd attempt only when task verifiably needs a specific capability: STATE it; `model` requires `provider`, `effort` requires `provider`+`model`; ultracode effort is Opus 4.8+ only. SOLE CHANNEL: while connected this is the only sanctioned sub-agent launch path in BOTH orchestration states; harness-native Task/Agent tools forbidden. Children get SUBAGENT_MCP_SUBAGENT=1 so hooks skip them. Launch returns `processing` (alive); later `stalled` is alive-but-quiet, NOT dead: wait/re-poll, don't kill. DEADLOCK: set `deadlock=true` only after 2 failed/unsatisfactory attempts for the SAME atomic task; from 3rd attempt deadlock outranks overrides, so drop provider/model/effort. SUB-ORCHESTRATOR: `sub-orchestrator: true` (main orchestrator only, depth 0) launches a delegate-only orchestrator for one disjoint plan section, used by swarm dispatch; server injects directive + env marker; the child's own sub-agents run as normal workers (flag never inherits).",
+  "Spawn a sub-agent session. CONTRACT: `prompt` states objective + output format + tools/sources + boundaries; the server auto-upserts \"<this is a request from a parent process>\" as true first line (idempotent), so you need not add it. SCALE: ~1 agent for a simple fact-find, 2-4 for comparisons; split multi-phase work into atomic steps, one task_category each. AUTO MODE (mandatory first attempt unless override is licensed): pass only `prompt` + `task_category`; server picks provider/model/effort. FAILOVER: launch-time failure (incl. provider usage/rate-limit refusal before output) quietly cascades down ranking and reports `failover_note`; if all fail, one loud error lists every candidate + reason. Provider+model override is PINNED: one attempt, no substitute. `provider`/`model`/`effort` are OVERRIDES, licensed on 1st/2nd attempt only when task verifiably needs a specific capability: STATE it; `model` requires `provider`, `effort` requires `provider`+`model`; ultracode effort is Opus 4.8+ only. CHANNEL BOUNDARY: this launches MCP agents in BOTH orchestration states; Codex native subagents remain an independent channel governed by Codex/user/project rules. Children get SUBAGENT_MCP_SUBAGENT=1 so hooks skip them. Launch returns `processing` (alive); later `stalled` is alive-but-quiet, NOT dead: wait/re-poll, don't kill. DEADLOCK: set `deadlock=true` only after 2 failed/unsatisfactory attempts for the SAME atomic task; from 3rd attempt deadlock outranks overrides, so drop provider/model/effort. SUB-ORCHESTRATOR: `sub-orchestrator: true` (main orchestrator only, depth 0) launches a delegate-only orchestrator for one disjoint plan section, used by swarm dispatch; server injects directive + env marker; the child's own sub-agents run as normal workers (flag never inherits).",
   {
     task_category: z.enum(TASK_CATEGORIES).describe(TASK_CATEGORY_GLOSS),
     prompt: z.string().min(1),
-    provider: z.enum(["claude", "codex"]).optional(),
-    model: z.enum(["haiku", "sonnet", "opus", "opus-4-8", "fable", "gpt-5.5", "gpt-5.6"]).optional(),
+    provider: z.enum(["claude", "codex", "pi"]).optional(),
+    model: z.enum(["haiku", "sonnet", "opus", "opus-4-8", "fable", "gpt-5.5", "gpt-5.6", "pi-cheap", "pi-balanced"]).optional(),
     effort: z.enum(["medium", "high", "xhigh", "max", "ultracode"]).optional(),
     cwd: z.string().optional(),
     deadlock: z.boolean().optional().describe("MANDATE: ALWAYS set deadlock=true when, and ONLY when, 2 launch attempts for the SAME atomic task have already failed or been unsatisfactory — the 3rd attempt onward. Re-wording the prompt does NOT make it a different task; splitting a failed task does NOT reset attempts for its unchanged parts; re-launching for the same deliverable means the prior attempt COUNTS as failed/unsatisfactory ('partial progress' is not an exemption). NEVER set it on a 1st or 2nd attempt, NEVER for a different task, NEVER speculatively. Auto mode only: cannot be combined with provider/model/effort — from the 3rd attempt deadlock outranks any capability override, so drop those params. Passing false is identical to omitting it."),
@@ -2546,13 +2614,47 @@ if (
 // Tool 8: orchestration-mode
 server.tool(
   "orchestration-mode",
-  "Toggle or query per-project ORCHESTRATION MODE. `enabled`: true = ON, false = OFF for THIS session only, omit = query. SOLE CHANNEL holds in BOTH states: subagent-mcp is the only sanctioned way to launch sub-agents; toggling OFF does not lift that. WHAT: when ON act as a delegate-ONLY orchestrator; delegate every step, inline-by-right does not exist, a non-delegable atomic step needs a one-time user-approved exception via the structured-question tool. Default is OFF each session; setup writes no orchestration state. enabled:true explicitly turns ON or re-enables mid-session; enabled:false is a session-keyed 2h-TTL opt-out, HONORED even after the 15% latch or metering fail-safe forces ON. PERSISTENCE: a permitted disable applies only to THIS keyed session; after the 2h backstop the current session may latch/fail-safe ON, while each new keyed session returns to default OFF. Keyless or undetectable metering remains fail-safe ON; a hookless host may use only the one-time non-persisted conversational opt-out. DISABLE: never on your own initiative; you may PROPOSE OFF on task-fit mismatch, but only EXPLICIT user permission may set enabled:false. Per-turn injection fires only in CLI hosts that load the bundled hook; desktop hosts toggle the marker but inject nothing.",
+  "Toggle or query per-project ORCHESTRATION MODE. `enabled`: true = ON, false = OFF for THIS session only, omit = query. CHANNEL BOUNDARY: orchestration mode affects MCP-launched agents only; Codex native subagents remain available under Codex/user/project rules in both states. WHAT: ON requires MCP-managed delegation; OFF/UNKNOWN permits inline work and task-fit Pi launches according to the separate Pi preference. Pi OFF prevents automatic Pi; absent hooks or OFF orchestration never imply Pi OFF. A non-delegable ON step needs a one-time user-approved exception. Codex native delegation remains independent. Default is OFF each session; setup writes no orchestration state. enabled:true explicitly turns ON or re-enables mid-session; enabled:false is a session-keyed 2h-TTL opt-out, and never needed to suppress automatic ON, because only explicit enable turns ON. PERSISTENCE: a permitted disable applies only to THIS keyed session; after the 2h backstop the current session remains OFF without explicit enable, while each new keyed session returns to default OFF. Undetectable metering and missing hook tags both default OFF unless orchestration was explicitly enabled. DISABLE: never on your own initiative; you may PROPOSE OFF on task-fit mismatch, but only EXPLICIT user permission may set enabled:false. Per-turn injection runs in Codex CLI and Desktop when the bundled SessionStart and UserPromptSubmit hooks are configured and trusted. Untrusted or unavailable hooks inject no tag, so the instruction fallback treats orchestration as UNKNOWN/default OFF. PI SESSION MODE: `pi_session_mode` (auto | on | off) records THIS session's Pi delegation eagerness: AUTO = judge task fit; ON = proactively delegate suitable bounded work; OFF = no automatic Pi launches. If unset, apply explicit user/project Pi policy directly; do not call this tool merely to record an existing default. A rejected mode-setting call alone does not disable launch_agent or change Pi policy. The fixed Pi triple and MCP permissions remain in force; Codex native subagents are independent.",
   {
     enabled: z.boolean().optional(),
+    pi_session_mode: z.enum(["auto", "on", "off"]).optional(),
   },
   withMaintenance(async (params: any) => {
     const cwd = process.cwd();
     const key = orchestrationMarker.readCurrentSession(cwd);
+    // Pi session mode (auto / on / off): session-scoped delegation-eagerness
+    // selector for Pi workers. ONLY tunes launch eagerness — the fixed triple
+    // (pi / pi-balanced / max), SOLE-CHANNEL rule and permission semantics are
+    // untouched. Same session-keyed store as the enable/disable records.
+    if (params.pi_session_mode) {
+      if (!key || !orchestrationMarker.isSessionScopedKey(key)) {
+        return errorResult(
+          "cannot set pi_session_mode: no session identity found for this project " +
+          "(the per-turn hook has not fired yet, or the host supplies no session_id). " +
+          "Pi session mode is session-keyed only; send one prompt first."
+        );
+      }
+      const previous =
+        orchestrationMarker.readPiSessionMode(key) ?? "unset";
+      orchestrationMarker.writePiSessionMode(key, params.pi_session_mode);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              pi_session_mode: params.pi_session_mode,
+              previous_mode: previous,
+              session_scope: key
+                ? orchestrationMarker.isSessionScopedKey(key)
+                  ? "session"
+                  : "anonymous"
+                : "none",
+              message: "Pi delegation mode set for THIS session only; new sessions re-ask.",
+            }),
+          },
+        ],
+      };
+    }
     if (params.enabled === true) {
       if (!key) {
         return errorResult(
@@ -2561,7 +2663,7 @@ server.tool(
       }
       if (!orchestrationMarker.isSessionScopedKey(key)) {
         return errorResult(
-          "cannot enable: this host supplies no session identity (no session_id/transcript_path in hook payloads) and enable records are session-keyed only. Orchestration remains fail-safe ON for this anonymous host."
+          "cannot enable: this host supplies no session identity (no session_id/transcript_path in hook payloads) and enable records are session-keyed only. Orchestration remains OFF for this anonymous host."
         );
       }
       orchestrationMarker.removeDisable(key);
@@ -2596,7 +2698,7 @@ server.tool(
             text: JSON.stringify({
               orchestration_mode: "disabled-this-session",
               message:
-                "orchestration disabled for THIS session only; this opt-out overrides the 15% latch and metering fail-safe until the next new session or the 2h backstop.",
+                "orchestration disabled for THIS session only; only an explicit enable can turn orchestration back ON; this OFF choice is session-scoped.",
             }),
           },
         ],
@@ -2793,7 +2895,11 @@ if (isMain) {
   const readPkg = () =>
     JSON.parse(
       readFileSync(new URL("../package.json", import.meta.url), "utf8")
-    ) as { name: string; version: string };
+    ) as { name: string; version: string; private?: boolean };
+  if ((arg === "update" || arg === "--update" || arg === "upgrade") && readPkg().private) {
+    console.error("Registry updates are disabled for this private fork preparation. Review source updates in a separate checkout.");
+    process.exit(1);
+  }
   if (arg === "version" || arg === "--version" || arg === "-v") {
     console.log(readPkg().version);
     process.exit(0);
@@ -3015,19 +3121,55 @@ if (isMain) {
     process.exit(1);
   }
   else {
-  // ORCHESTRATION MODE PERSISTS across restarts/sessions: the server does NOT
-  // clear the marker on startup. DEFAULT ON now means ABSENCE of a disable
-  // record — a project stays ON with no marker write needed; OFF is only a
-  // per-session disable record that holds while it is active, cleared with
-  // explicit user permission. On a new session a carried-over noncanonical ON marker
-  // (if any) triggers a one-time prompt asking whether to remain enabled; under
-  // default-ON this rarely fires.
-  // (the tool's enabled:false writes only a session-keyed disable record via
-  // writeDisable; keyless persistent-disable requests are refused.)
+  // Orchestration defaults OFF on every session. An explicit, session-scoped
+  // enable record is required for ON. The server preserves records across
+  // process restarts, subject to their session key and two-hour expiry.
+  // Keyless enable and disable requests are refused.
   getNpmPrefix();
   void checkForNpmUpdate().catch(() => {});
   startLivenessHeartbeat();
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  // MCP server shutdown sweep: kill live agent children so no worker becomes a
+  // parent-dead orphan when the host closes our transport (Codex session close,
+  // Desktop quit, exec harness teardown). Pi RPC children do NOT exit on stdin
+  // EOF (observed), so an explicit sweep using the EXISTING kill_agent semantics
+  // is required for the pi family. No new watchdog, no second control plane.
+  const sweepLiveAgentsOnShutdown = () => {
+    for (const agent of agents.values()) {
+      try {
+        if (agent.driver.closed) continue;
+        void pendingPermissionManager.closeAgent(agent.id, "MCP server shutting down");
+        agent.status = "stopped";
+        agent.driver.kill();
+        releaseSlot(agent.slotPath ?? null);
+        agent.slotPath = null;
+        if (agent.process.pid) {
+          if (isWindows) {
+            spawn("taskkill", ["/pid", String(agent.process.pid), "/t", "/f"], { windowsHide: true });
+          } else {
+            process.kill(agent.process.pid, "SIGKILL");
+          }
+        }
+      } catch {}
+    }
+  };
+  // Host-side transport close = the normal "server is being shut down" signal
+  // (Codex session close / Desktop quit / exec teardown). Sweep live agent
+  // children HERE instead of in a process 'exit' handler: 'exit' handlers must
+  // be synchronous and the force-kill path (taskkill tree teardown) inside one
+  // measurably delayed the next spawned server's initialize in tests.
+  transport.onclose = () => {
+    sweepLiveAgentsOnShutdown();
+  };
+  process.on("SIGINT", () => {
+    sweepLiveAgentsOnShutdown();
+    process.exit(130);
+  });
+  process.on("SIGTERM", () => {
+    sweepLiveAgentsOnShutdown();
+    process.exit(143);
+  });
   }
 }

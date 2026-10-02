@@ -1,6 +1,6 @@
 {
   "name": "subagent-mcp",
   "version": "3.2.3",
-  "description": "Local MCP server for Claude Code and Codex sub-agent orchestration.",
+  "description": "Modified for the subagent-mcp Pi adapter fork. Pi RPC workers for Codex through a subagent-mcp stdio adapter.",
   "hooks": "./codex/hooks.json"
 }

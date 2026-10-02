@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * advanced-ruleset.py execution gate — the user-editable python override hook
  * with final authority over launch_agent model routing.
@@ -236,9 +237,15 @@ const SONNET_EFFORTS: readonly string[] = LAUNCH_EFFORTS.filter((e) => e !== "ul
 const CODEX_EFFORTS: readonly string[] = LAUNCH_EFFORTS.filter(
   (e) => e !== "ultracode" && e !== "max"
 );
+// Pi launch models (glm-5.3-flash): selectable thinking levels are low/high/max
+// (pi harness catalog). xhigh does not exist; max is the strongest tier.
+const PI_EFFORTS: readonly string[] = ["high", "max"];
 
 function effortAllowed(model: string, effort: string): boolean {
   if (model === "haiku") return effort === HAIKU_EFFORT;
+  if (model === "pi-cheap" || model === "pi-balanced") {
+    return (PI_EFFORTS as readonly string[]).includes(effort);
+  }
   if (model === "sonnet" || model === "fable") return SONNET_EFFORTS.includes(effort);
   if (model === "opus" || model === "opus-4-8") {
     return (LAUNCH_EFFORTS as readonly string[]).includes(effort);
@@ -291,7 +298,7 @@ export function validateRulesetOutput(
     if (typeof provider !== "string" || typeof model !== "string" || typeof effort !== "string") {
       return { ok: false, error: `candidate ${i}: provider, model, and effort must be strings` };
     }
-    if (provider !== "claude" && provider !== "codex" && provider !== "api") {
+    if (provider !== "claude" && provider !== "codex" && provider !== "api" && provider !== "pi") {
       return { ok: false, error: `candidate ${i}: unknown provider ${provider}` };
     }
     if (provider === "api") {
@@ -318,6 +325,9 @@ export function validateRulesetOutput(
     }
     if (provider === "codex" && !["gpt-5.5", "gpt-5.6"].includes(model)) {
       return { ok: false, error: `candidate ${i}: codex only supports gpt-5.5 or gpt-5.6, got ${model}` };
+    }
+    if (provider === "pi" && !["pi-cheap", "pi-balanced"].includes(model)) {
+      return { ok: false, error: `candidate ${i}: pi only supports pi-cheap or pi-balanced, got ${model}` };
     }
     if (!effortAllowed(model, effort)) {
       return { ok: false, error: `candidate ${i}: effort ${effort} is not valid for ${provider}/${model}` };
@@ -391,7 +401,16 @@ export function createRulesetGate(
       }
       // First candidate that spawned IS the interpreter for this execution;
       // its script-level failure is a ruleset failure, not a cue to walk on.
+      // EXCEPTION: some interpreters are "stubbed" by cmd.exe shell resolution
+      // (the Windows Store python3 alias resolves to nothing and exits 9009).
+      // Exit code 9009 (0x2331) is cmd.exe's "not recognized" status; treat it
+      // as interpreter ABSENT and advance the walk, because the walk's purpose
+      // is to find a RUNNABLE interpreter, and an absent one is not a scaffold
+      // failure. Any other failure (script-level) remains a hard fail.
       if (outcome.kind === "failed") {
+        if (/^exit code 9009/.test(outcome.detail)) {
+          continue; // interpreter absent (stubbed shim) — walk advances.
+        }
         console.error(`[ruleset] env-check failed (${candidate}): ${outcome.detail}`);
         return { ok: false };
       }

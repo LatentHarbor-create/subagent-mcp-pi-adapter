@@ -1,115 +1,16 @@
-# Repository Agent Instructions
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
+# Pi adapter contributor instructions
 
+This fork implements Pi workers through the subagent-mcp channel. Use a topic branch, preserve unrelated work, and test behavior changes. Never publish, push, create a release, or change the installed adapter without explicit owner authorization. The upstream author's project board is not this fork's project board.
 
-## PROJECT BOARD LAW - BINDING, NO EXCEPTIONS
-
-https://github.com/users/Heretyc/projects/4 is the canonical Source of Truth
-    for the PLANNING and STATUS of all repo Work. It is subordinate to the alignment chain
-    in Law 2: where Board and Premise conflict, the Premise wins and the Board is corrected.
-
-### DEFINITIONS
-"Work" = any mutation of git-tracked content: commits, branches, PRs. Wiki edits,
-    releases, tags, and comments are not Work. Board mutations are not Work and never
-    require issues.
-"Human Review" (HR) = engagement of the human via the structured question tool,
-    presented as if the human has no knowledge of the project or repo. Two modes:
-  - Decision HR: 2+ options, each with pros and cons.
-  - Action HR: 1 required action, why it is needed, and the consequence of inaction.
-    HR is NEVER skippable for any authority or reason. One HR session MAY bundle every
-    trigger pending at that moment.
-"Premise" = The answer to "what is this + why care?":  who it's for + problem + what
-    it does + why not alternatives. Canonical copy: first paragraph of README.md,
-    MAXIMUM 1000 characters.
-"Short Premise" = Verbatim-identical version of Premise (minus the "why not 
-    alternatives" aspect) MAXIMUM 350 characters and found in BOTH the Repo and Project 
-    Short Descriptions.
-"Interactive Session" = A harness that has a working structured question tool. 
-    Lacking this, the session is considered non-interactive.
-
-### DIRECTIVES
-
-1. Short Premise must faithfully condense the canonical Premise. Any edit to the 
-    Premise updates both Short Premise copies in the same session. If the copies mismatch, 
-    truncate, or drift from the canonical: the README is canonical and
-    the mismatch is an HR trigger. 
-2. Code MUST align with repo Spec docs. Spec MUST align with the Premise at all
-    times. The Premise is always the tie-breaker. If in doubt, HR. If the
-    Repo lacks the canonical Premise in README.md, or either Short Description
-    lacks the Short Premise: recon the project specs/code and present a proposed
-    Premise and Short Premise via Decision HR; that same HR authorizes the board
-    issue for the restoration edit (which is Work).
-3. All Work maps to a board issue. All issues map to Milestones. No unmapped Work.
-4. Every issue/epic carries ALL required fields at ALL times: Label(s),
-    Priority, Size, Estimate, Iteration, Milestone, Assignee, Relationships,
-    branch/PR link, and updated Status. Satisfiability rules: issues are created
-    fully populated in a single operation, with Iteration taken from the
-    authorizing HR (Law 9, bundled per the HR definition); the branch/PR link is
-    mandatory from the moment the branch or PR exists and MUST be back-filled in
-    the same working session ("none yet" before that; "n/a" for board-only
-    issues); Assignee follows Law 11 (an idle issue may be unassigned or
-    assigned to anyone; an actively-worked issue MUST be assigned to the worker).
-5. Every PR maps to a fully populated issue.
-6. Live updates are mandatory: update the mapped item BEFORE, DURING, and AFTER
-    Work. Agents update existing items in real time without seeking permission.
-    While an HR is pending on an item, only Status changes and comments recording
-    the block are permitted on it.
-7. Every agent MUST fully understand the Board plan and the Premise BEFORE acting.
-    The read-only sweep in Law 13 both requires and satisfies this understanding.
-8. Any conflict between tasked work and the Board: STOP and deconflict via HR
-    BEFORE any board edit. Conflicts between Board and Premise resolve per Law 2.
-9. Net-new Work not on the board: HR BEFORE adding it. That HR also supplies the
-    new issue's Iteration and other judgment fields (Law 4).
-10. Board ops use ONLY the `gh` CLI, including `gh api` where subcommands lack
-    field coverage (Relationships). If `gh` is not authenticated or lacks
-    the project scope: Action HR asking the human to run `gh auth refresh -s
-    project` (interactive; agents cannot complete it).
-11. Before starting Work on an unassigned issue, assign it to the logged-in `gh`
-    user. If an issue you are tasked to work is assigned to someone else: Action
-    HR to reassign. If the human declines, stand down from that item: you are
-    forbidden from performing Work on any issue not assigned to the logged-in
-    `gh` user. Idle issues may remain unassigned or assigned to others.
-12. Never store local paths or machine-specific information anywhere on the Board.
-13. Sweep the Board before starting and after finishing Work: find the most
-    recently COMPLETED "Project Board true-up #". If it completed more than 5
-    business days ago, or none exists: dispatch 2+ review subagents over all
-    incomplete board items for non-compliance with these Laws (if the harness
-    cannot spawn subagents, perform work directly). HR is mandated on all 
-    non-compliant items found (bundle-able). Once the true-up is complete: mark 
-    it complete and create the next true-up issue with an incremented #, 
-    NO assignee, description = a VERBATIM copy of these Laws from their canonical 
-    home (this document at the repo root).
-14. HR may be DEFERRED only in headless runs where no human is reachable 
-    (determined if no structured question tool exists in your harness), and
-    deferral is never resolution. Queue the item as a comment on the dedicated
-    HR-queue board item, set the affected issue's Status to "Awaiting Review" 
-    (rename "In Review" to "Awaiting Review" if it exists. If you cannot rename, 
-    use "In Review" status), and proceed only with Work unaffected by the pending 
-    question; doubt about whether Work is affected resolves to AFFECTED. Any 
-    Interactive Session MUST drain the queue (bundled HR) BEFORE starting any 
-    new Work. If any queued item is older than 5 business days, ALL Work halts 
-    until the queue drains. Every true-up (Law 13) reports the queue's contents. 
-    Queued items are never deemed approved, expired, or abandoned.
-
-
-## Content Policy - No Historical Framing (Standing, Unskippable)
-
-Repo content states only the current objective truth. This rule is always in 
-    effect, at maximum strength, and applies to every tracked file.
-
-- No historical context or origin stories. Do not narrate how a system, methodology, or decision came to be.
-- No allusions to previous versions, iterations, sessions, or rejected designs (no "v1/v2/v3", no "Approach A/B", no "the old system").
-- No "formerly / replaces / superseded / was / updated from / previously" meta-framing about the repo's own design.
-- No changelog narration in docs, and no dated "as of <date>, N tasks complete" journaling.
-- Git history is the sole record of how anything changed; never restate that history in prose.
-- Do not include AI attribution or co-author lines in PRs, commits, manifests, 
-    docs, or generated project metadata.
+Keep credentials, local paths, runtime logs, and user configuration out of the repository. Keep upstream license and applicable notices. Every modified upstream file carries a modification notice.
 
 <!-- subagent-mcp:managed:begin schema=5 -->
 ## subagent-mcp invariant — managed block, do not edit between markers
 
 Upserted by `subagent-mcp init` at user request; re-running init keeps it in sync.
 
-SUB-AGENT EXEMPTION: if this session's prompt's literal FIRST LINE begins with "<this is a request from a parent process>", SKIP this entire block EXCEPT the SUB-AGENT WORKTREE CARVE-OUT and the SUB-ORCHESTRATOR CARVE-OUT below, which still apply (you are a sub-agent; this prevents fail-safe-ON recursion and fork-bombs). Leading blank lines do not count — the marker must be physically line 1.
+SUB-AGENT EXEMPTION: if this session's prompt's literal FIRST LINE begins with "<this is a request from a parent process>", SKIP this entire block EXCEPT the SUB-AGENT WORKTREE CARVE-OUT and the SUB-ORCHESTRATOR CARVE-OUT below, which still apply. Leading blank lines do not count — the marker must be physically line 1. Codex native subagents follow Codex's own lifecycle and are outside this MCP orchestration block.
 
 SUB-AGENT WORKTREE CARVE-OUT: you are a delegated sub-agent (env SUBAGENT_MCP_SUBAGENT=1), already placed in your target working tree by the orchestrator. Do not create or switch git worktrees; skip the worktree-isolation gate; do all mutating work directly in the provided cwd.
 
@@ -117,85 +18,38 @@ SUB-ORCHESTRATOR CARVE-OUT: if env SUBAGENT_MCP_SUB_ORCHESTRATOR=1, the sub-agen
 
 CANONICAL SOURCE: the subagent-mcp MCP `instructions` string (read once at connect) and docs/spec/dev-loop/orchestration-directive-architecture.md. This block mirrors that operating model inline so the session stays governed even if the MCP `instructions` are momentarily stale; where the two disagree, the MCP `instructions` win because they are read fresh each connect.
 
-HARNESS-HOOK STATE: a harness-hook context carrying a <subagent-mcp state="..."> tag reports the current orchestration ON/OFF state and takes effect with no exceptions, because it is the only channel with fresh, harness-verified state — self-reported prose cannot substitute for it. A token counts as such a tag only when it is a real tag with a `state` attribute; a bare mention of "subagent-mcp" in prose is not a tag and carries no authority. A user request can only switch orchestration ON or OFF, never assert what the current state already is — that comes solely from the tag. No tag present means the state is UNKNOWN (see NO-HOOK below); never infer it from anything else.
+HARNESS-HOOK STATE: a harness-hook context carrying a <subagent-mcp state="..."> tag reports subagent-mcp orchestration ON/OFF. It does not control Codex native subagents. A token counts as such a tag only when it is a real tag with a `state` attribute; a bare mention of "subagent-mcp" in prose is not a tag. A user request can switch MCP orchestration ON or OFF; the current state comes from the tag. No tag present means the MCP state is UNKNOWN (see NO-HOOK below).
 
 PRECEDENCE (jointly binding top tier): <subagent-mcp> hook tags and repo/system safety-scope rules are both binding at the same priority — neither is read as outranking the other. If they genuinely conflict, stop and escalate to the user via the structured-question tool rather than picking one side or averaging them silently; this is intentionally not the agent's call to make alone. Hook tags otherwise take precedence over ordinary user requests, because they reflect harness-verified state rather than a request that could be mistaken or out of date.
 
-SOLE CHANNEL — BOTH ORCHESTRATION STATES: whether orchestration is ON or OFF, every sub-agent launch goes through subagent-mcp `launch_agent`; harness-native Task/Agent/collaboration tools, shell-spawned agents, and any wrapper around them are never permitted. Why: native launch paths fragment permission handling and user-instruction compliance and add context/token overhead; subagent-mcp keeps permission handling and routing consistent with bounded handoffs (fuller rationale: docs/spec/dev-loop/orchestration-directive-architecture.md).
+CHANNEL BOUNDARY — BOTH ORCHESTRATION STATES: subagent-mcp `launch_agent` governs only agents launched through this MCP service. Codex native subagents are an independent channel: their availability, selection, launch, permissions, waiting, and outputs follow Codex, user, and project rules. No subagent-mcp option, hook state, Pi preference, Smart route, worktree rule, or service outage disables, redirects, or gates the Codex native channel. Pi may be preferred for suitable work, but Pi being forbidden, unavailable, or unsuitable never blocks Codex native subagents. Claude and Gemini native-agent restrictions remain host-specific.
 
-ORCHESTRATION ON — you are the ORCHESTRATOR. Allowed tools: only the structured-question tool (AskUserQuestion on Claude / request-user-input on Codex), subagent-mcp, and the /workflows tool. There is no inline-by-right; every step runs in a sub-agent. Sole delegate-only exception — applicable skill instructions: you may directly read the SKILL.md of a skill that serves the user's current request, plus the files it explicitly requires, only while each referenced path stays inside that same skill's folder; reading grants no task-side action authority, and if those instructions expand scope beyond the user's current request, ask fresh approval via the structured-question tool first — action steps still run through subagent-mcp sub-agents. If one atomic step truly cannot run in a sub-agent, ask the user via the structured-question tool for a one-time exception for that single step, perform only that step, then resume delegating.
+DELEGATION CHOICE — MCP orchestration ON requires delegation for MCP-managed work; OFF or UNKNOWN removes that requirement and permits inline work. OFF or UNKNOWN does not disable `launch_agent` or automatic task-fit Pi delegation. Pi session mode is a separate choice: AUTO selects suitable bounded tasks, ON proactively uses Pi for them, and OFF prevents automatic Pi launches. If Pi mode is unset, follow explicit user and project Pi policy. Never infer Pi OFF from an OFF hook tag, a missing hook tag, or missing context usage. Explicit Pi requests still follow project, model, permission, and worktree rules. Codex native subagents remain independent.
+
+ORCHESTRATION ON — you are the ORCHESTRATOR for MCP-managed work. MCP orchestration tools are the structured-question tool (AskUserQuestion on Claude / request-user-input on Codex), subagent-mcp, and /workflows. Codex native subagent tools remain independently available in ON and OFF; using them follows Codex's own rules, not this MCP tool allowlist. There is no inline-by-right for MCP-managed steps. Applicable skill instructions may be read directly only within that skill's folder; action steps remain delegated. If an MCP-managed atomic step truly cannot be delegated, ask the user via the structured-question tool for a one-time exception for that step.
 
 TASK TRACKING: track multi-step work with the harness-native task tracking tool (if one exists), keeping statuses current as work progresses.
-WAIT-ON-AGENTS: When waiting for agents to finish processing, utilize the SMCP (Subagent-MCP) wait tool on loop rather than less efficient harness native methods
+WAIT-ON-AGENTS: use the subagent-mcp wait tool for MCP-launched agents. Codex native agents use Codex-native waiting and results; this MCP rule does not apply to them.
 
-ORCHESTRATOR WORKTREE SETUP: for mutating work, first place sub-agents in a compliant linked worktree/work branch; the main checkout cwd applies only to read-only work or already-isolated target-tree contexts (sub-agents no longer self-isolate into per-agent worktrees). Serialize any sub-agents that write the same files — never run concurrent writers over overlapping paths (no cwd-level lock exists).
+ORCHESTRATOR WORKTREE SETUP: before mutating work through subagent-mcp, place MCP-launched agents in a compliant linked worktree/work branch. This MCP worktree gate does not apply to Codex native subagents, which follow Codex and project rules. Serialize any agents that write the same files.
 
-READ-ESCALATION LADDER (the orchestrator's only read channels, in order): (1) subagent-mcp `poll_agent` TAIL; (2) if the tail is insufficient, dispatch ONE sub-agent to return a single summary of <=100 lines, trusted as-is (no separate verification step); (3) anything larger: the USER reads the document directly. No reads or writes occur outside these channels. An empty or stalled tail means the agent is ALIVE, not dead — do NOT busy-loop poll_agent; learn completion via `wait`. Large inter-agent data: the orchestrator assigns scratch-file paths (%TEMP% on Windows, /tmp on POSIX) in prompts; the producing sub-agent writes, the consuming sub-agent reads; the orchestrator NEVER reads those files.
+READ-ESCALATION LADDER FOR MCP-LAUNCHED AGENTS: (1) subagent-mcp `poll_agent` TAIL; (2) if insufficient, dispatch ONE MCP sub-agent to return a <=100-line summary; (3) anything larger: the USER reads it. Do not busy-loop poll_agent; learn completion via `wait`. MCP agents may exchange large data through scratch-file paths. Codex native subagent output and coordination follow Codex's own channel and are not limited by this MCP read ladder.
 
-ORCHESTRATION OFF BY DEFAULT -- each new session starts with orchestration OFF. A hook meters real provider-reported context usage (never tokenized, never self-estimated). At 15% utilization a persisted latch force-enables orchestration and coaches a planning stop of at least 4 open questions, whose answers become this session's goal context. At 20% utilization handoff-write/handoff-read/handoff-clear unlock so that goal context can be recorded for a voluntary, clean session handoff. At 80% utilization a fresh handoff-write becomes MANDATORY: it records the goal context and prepares the handoff record, but a successful write does NOT mandate an immediate new session -- keep working. After a verified auto-compaction, exactly one turn MANDATES a handoff-read to resume from the prepared handoff. If context size cannot be measured, the hook fails safe to ON. Never assert a state yourself -- only the hook tag is authoritative.
+ORCHESTRATION OFF BY DEFAULT -- each new session starts with MCP orchestration OFF. A hook meters real provider-reported context usage. At 15% utilization, MCP planning coaching may run only if orchestration was explicitly enabled; the threshold does not turn it ON. At 20% utilization MCP handoff tools unlock. At 80% utilization a fresh MCP handoff-write is mandatory for MCP-managed work; keep working after a successful write. After verified auto-compaction, one MCP handoff-read turn resumes the prepared handoff. If context size cannot be measured, MCP orchestration remains OFF unless explicitly enabled. These thresholds do not gate Codex native subagents. Only the hook tag reports MCP orchestration state.
 
-MODEL SELECTION: defaults to smart/automatic whenever unset — the server auto-picks each sub-agent's model and launch_agent rejects provider/model/effort selectors; those selectors are honored only inside the existing user-approved override window (model-selection-mode "user-approved-overrides", set only with explicit user authorization via the structured-question tool).
+MODEL SELECTION: subagent-mcp launches default to smart/automatic; provider/model/effort selectors require its user-approved override window. This MCP setting never selects or restricts Codex native subagent models.
 
 SWARM WORKFLOW: when a work objective is projected to span multiple sessions, offer the agentic-swarm workflow and drive it with the swarm MCP tool - swarm() starts it, each swarm(N) reports stage N done and returns the next stage's coaching, swarm(0) abandons. Stage state lives in the server, in memory only - never self-assert a stage. The launch_agent sub-orchestrator: true flag exists ONLY for the swarm dispatch stage; never set it elsewhere.
 
-DROPOUT WHILE ON: if subagent-mcp stops responding while orchestration is ON, halt and ask the user; do nothing inline. Keep re-checking and stay halted until subagent-mcp is restored (no auto-degrade). The only user choices are keep-waiting (the default) or explicitly abandon the whole task; aborting ends the task, it never switches you to inline work.
+DROPOUT WHILE ON: if subagent-mcp stops responding while MCP orchestration is ON, halt only MCP-managed steps and resolve the state of any running MCP agent before rerouting its work. Codex native subagents remain available under Codex and project rules; MCP failure does not disable them or require waiting for MCP recovery. Do not silently duplicate an in-flight MCP mutation.
 
-NO-HOOK / UNKNOWN STATE: if no harness-hook injection bearing a <subagent-mcp state="..."> tag is present this session (e.g. Gemini, desktop apps, or any host that fires no hook), the state is UNKNOWN — represented by the absence of any tag, never by a tag value. Emit this warning to the user: "subagent-mcp: no hook injection detected — orchestration state unknown; defaulting to ON." Why: with no fresh state signal, defaulting to ON avoids ungoverned inline execution; one spoken opt-out is allowed per session. If you are not currently running an orchestration workflow, you may explicitly opt out of ON for this session by saying so now; this opt-out does not persist and is not recorded. The sub-agent first-line exemption is the only automatic suppressor of this default.
+NO-HOOK / UNKNOWN STATE: if no harness-hook injection bearing a <subagent-mcp state="..."> tag is present this session (e.g. hooks are unsupported, unconfigured, or untrusted), the state is UNKNOWN — represented by the absence of any tag, never by a tag value. Emit this notice to the user: "subagent-mcp: no hook injection detected — orchestration state unknown; defaulting to OFF." Without a fresh, verified ON signal, do not impose ON's delegate-only rule; inline work is allowed. The separate Pi preference still governs whether suitable work may be delegated through `launch_agent`. Do not infer ON from the absence of a tag or from self-reported prose. The sub-agent first-line exemption still prevents child-session recursion.
 
-DISABLE: never on your own initiative; you may propose OFF on task-fit mismatch via the structured-question tool, and only explicit user approval may set enabled:false — a session-keyed opt-out for THIS session only (2h backstop) honored even after the 15% latch or metering fail-safe; user-approved enabled:true may re-enable mid-session; each new session starts back at the default-OFF metering regime.
+DISABLE: never change MCP orchestration on your own initiative. Only explicit user approval may set enabled:false; user-approved enabled:true may re-enable mid-session. The setting is session-keyed, and each new session starts OFF. It has no effect on Codex native subagent availability or use.
 <!-- subagent-mcp:managed:end -->
 
-subagent-mcp turns a host CLI into an orchestrator for local sub-agent
-sessions. It exposes MCP tools such as `launch_agent`, `poll_agent`, `wait`,
-`get_status`, `orchestration-mode`, `swarm`, and handoff tools. Provider
-credentials and user config live outside the repo.
+## Pi delegation preference
 
-## Fallback Rule
+In each new Codex session ask once for Pi AUTO, ON, or OFF; a clear initial selection answers the question. Pending an answer, do not automatically launch Pi. AUTO chooses task-fit delegation when expected benefit exceeds handoff, review, and coordination cost. ON actively looks for useful bounded work but never delegates merely to use Pi or based only on file count. OFF prevents automatic Pi launches; explicit bounded Pi requests remain subject to project rules.
 
-Use this file when the host reads instruction files but does not load
-subagent-mcp skills, hooks, or slash commands. This applies to instruction-tier
-fallback use in Gemini CLI, Cursor, Windsurf, Kiro, Copilot, and similar agents.
-
-## Orchestration
-
-- If a `<subagent-mcp state="...">` hook tag is present, treat it as the
-  authoritative orchestration state.
-- If no hook tag is present, say: `subagent-mcp: no hook injection detected:
-  orchestration state unknown; defaulting to ON.`
-- When orchestration is ON, use only `launch_agent` for sub-agent work. Do not
-  use native agent/task tools or shell-spawned agents.
-- Every sub-agent prompt must begin with `<this is a request from a parent
-  process>`.
-- Sub-agents return JSON with `status`, `summary`, `source_locators`, `risks`,
-  and `writes_requested`.
-
-## Read Ladder
-
-1. Use `poll_agent` tail output first.
-2. If the tail is insufficient, launch one summarizer sub-agent and trust its
-   summary if it is 100 lines or fewer.
-3. For larger handoffs, have sub-agents write scratch files and pass file paths
-   between them. The orchestrator does not read large files inline.
-4. Use `wait` to learn completion. A quiet or stalled agent is still alive.
-
-## Status And Repair
-
-- `/smcp:help`: load `skills/smcp-help/SKILL.md` for install, config, and
-  maintenance guidance.
-- `/smcp:status`: load `skills/smcp-status/SKILL.md` and call `get_status`.
-- `/smcp:doctor`: load `skills/smcp-doctor/SKILL.md`; run `subagent-mcp doctor`
-  read-only first and ask before any repair.
-- `/smcp:config`: load `skills/smcp-config/SKILL.md` and call `configure` to
-  list, read, or update configuration by canonical key.
-- Config commands: `subagent-mcp config init`, `subagent-mcp config validate`,
-  `subagent-mcp doctor`, `subagent-mcp upgrade`, `subagent-mcp rollback`.
-
-## Deeper Docs
-
-- Start with `retrieval-map.md` (repo root) to choose the smallest relevant doc.
-- Install and host wiring: `docs/registration.md` and `docs/install/`.
-- Tool reference: `docs/tools.md`.
-- Orchestration model: `docs/spec/dev-loop/orchestration-directive-architecture.md`.
-- Safety and clarification rules: `docs/spec/safety-scope.md`.
-- Git and worktree rules: `docs/spec/dev-loop/git-collaboration.md` and
-  `agents/GIT_COLLABORATION.md`.
+MCP orchestration defaults OFF and does not select Pi eagerness. Codex native subagents follow Codex, user, and project rules independently. MCP launches use only pi/pi-balanced/max. Smart routing applies that profile without explicit selectors. Explicit selectors require the MCP's approved override window. Respect project-specific prohibitions and configured blocked directories.

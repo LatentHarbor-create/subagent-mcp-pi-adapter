@@ -1,13 +1,13 @@
 {
   "name": "subagent-mcp",
   "version": "3.2.3",
-  "description": "Launches and manages local Claude Code and Codex CLI sub-agents, plus orchestration-mode hooks for per-turn directives and deterministic Claude tool gates.",
-  "displayName": "subagent-mcp",
-  "shortDescription": "Local MCP server for Claude Code and Codex sub-agent orchestration.",
+  "description": "Modified for the subagent-mcp Pi adapter fork. Pi RPC workers for Codex through a subagent-mcp stdio adapter.",
+  "displayName": "subagent-mcp Pi adapter",
+  "shortDescription": "Pi RPC workers for Codex through a subagent-mcp stdio adapter.",
   "capabilities": [
-    "Launch and manage local Claude Code and Codex CLI sub-agents",
-    "Inject orchestration-mode directives through Claude Code hooks",
-    "Route sub-agent tasks by category, model, provider, and effort"
+    "Launch Pi RPC workers through MCP",
+    "Keep Codex native subagents independent",
+    "Apply Pi-only Smart routing and the shared permission bridge"
   ],
   "defaultPrompt": "Run: subagent-mcp doctor"
 }

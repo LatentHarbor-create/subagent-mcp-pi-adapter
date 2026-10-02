@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import {
   mkdirSync,
   readFileSync,
@@ -22,6 +23,7 @@ export const AUTO_UPDATE_MIN_AGE_MS = 48 * 60 * 60 * 1000;
 export interface PackageInfo {
   name: string;
   version: string;
+  private?: boolean;
 }
 
 export interface PendingUpdateNotice {
@@ -315,6 +317,7 @@ export async function checkForNpmUpdate(deps: UpdateCheckDeps = {}): Promise<voi
     const last = readUpdateCheckStatus();
     if (last && now - Date.parse(last.checked_at) < UPDATE_CHECK_INTERVAL_MS) return;
     const pkg = (deps.packageInfo ?? readInstalledPackageInfo)();
+    if (pkg.private) return;
     const metadata = await fetchPackageMetadata(pkg.name, {
       fetch: deps.fetch ?? fetch,
       registryBaseUrl: deps.registryBaseUrl ?? "https://registry.npmjs.org",

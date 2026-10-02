@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import {
   closeSync,
   existsSync,
@@ -29,6 +30,7 @@ import {
   readInstalledPackageInfo,
 } from "./update-check.js";
 import { isSubOrchestratorEnv } from "../sub-orchestrator.js";
+import { stripDirectiveModificationNotice } from "./directive-text.js";
 
 /**
  * Provider-agnostic core of the UserPromptSubmit / SessionStart hook.
@@ -243,7 +245,9 @@ export function readDirective(
 ): string {
   try {
     const directivesDir = resolveDirectivesDir(env);
-    return readFileSync(join(directivesDir, fileName), "utf8");
+    return stripDirectiveModificationNotice(
+      readFileSync(join(directivesDir, fileName), "utf8")
+    );
   } catch {
     return "";
   }
@@ -360,7 +364,7 @@ export function ownerKey(payload: HookPayload, cwd: string, adapter: ProviderAda
 /**
  * Decide whether a marker that is already active is being seen by a FRESH claim
  * or by a CARRYOVER from a prior/other session. Orchestration mode now PERSISTS
- * across process restarts/sessions (under default-ON, absence of an active
+ * across process restarts/sessions (under default-OFF, absence of an active
  * disable record = ON; OFF is an active session-keyed disable record; the
  * owner_session marker only detects carried-over ON for the
  * one-time remain-enabled notice), so the first turn of a new session can inherit
@@ -632,7 +636,7 @@ export function latchDirectivesIdentical(env: NodeJS.ProcessEnv): boolean {
 }
 
 export interface MeteringTurnResult {
-  /** Whether context size is undetectable this turn (drives fail-safe ON). */
+  /** Whether context size is undetectable this turn (diagnostic only). */
   meteringUndetectableFailSafe: boolean;
   /** Single-path compaction verdict for the prior->current sample pair. */
   detection: metering.CompactionDetection | null;
@@ -713,23 +717,19 @@ function providerDirectiveFile(adapter: ProviderAdapter, prefix: string): string
  * three agree on the same turn (no drift between the hook tag and the tool).
  *
  * An explicit session disable always wins (2h TTL, user-only). Otherwise the
- * session is ON when the marker is active, the 15% latch has tripped, or
- * metering is undetectable (fail-safe ON). `meteringUndetectableFailSafe` is
- * supplied by the caller because only the caller knows its own turn context: the
- * hook honors the turn-1 grace window (no completed turn yet, so early turns are
- * NOT fail-safed), and the tool derives it from the persisted metering record.
+ * session is ON only when an explicit session enable record is active. The
+ * latch, metering availability, and Pi delegation preference cannot turn it ON.
  */
 export function computeEffectiveActive(
   cwd: string,
   current: string | undefined,
   now: number,
-  meteringUndetectableFailSafe: boolean
+  _meteringUndetectableFailSafe: boolean
 ): boolean {
   if (current !== undefined && marker.isSessionDisabled(current, now)) {
     return false;
   }
-  const latched = current !== undefined && latch.isLatchActive(current, now);
-  return marker.isActive(cwd, current) || latched || meteringUndetectableFailSafe;
+  return marker.isActive(cwd, current);
 }
 
 /**
@@ -891,18 +891,18 @@ export function runHook(
       handoff.markSessionHandoffRequired(cwd, current);
     }
     const meteringState = readMeteringState(current);
-    const wasLatched = latch.isLatchActive(current, now);
-    if (meteringState.phase !== "normal" || wasLatched) {
-      latch.tripLatch(current, now);
-    }
-    const isLatched = latch.isLatchActive(current, now);
-    const justTrippedLatch = !wasLatched && isLatched;
     const effectiveActive = computeEffectiveActive(
       cwd,
       current,
       now,
       meteringTurn.meteringUndetectableFailSafe
     );
+    const wasLatched = latch.isLatchActive(current, now);
+    if (effectiveActive && (meteringState.phase !== "normal" || wasLatched)) {
+      latch.tripLatch(current, now);
+    }
+    const isLatched = latch.isLatchActive(current, now);
+    const justTrippedLatch = effectiveActive && !wasLatched && isLatched;
 
     // MANDATORY lifecycle read: fires for exactly one turn after compaction,
     // BEFORE the ON/OFF cadence and independent of it (directive-only, no tool

@@ -11,6 +11,12 @@
     "declaration": false,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["src/routing-table.json"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/routing-table.json",
+    "src/pi-extensions/**/*"
+  ],
+  "x-fork-modification": "Modified for the subagent-mcp Pi adapter fork."
 }

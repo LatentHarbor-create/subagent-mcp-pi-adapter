@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import {
   closeSync,
   openSync,
@@ -30,10 +31,9 @@ import {
 import { isParentProcessMarkerFirstLine } from "../launch-prompt.js";
 
 /**
- * Codex CLI hook entry. Branches on payload.hook_event_name:
- *   - 'SessionStart'     -> if active and not a subagent, emit FULL + the ON
- *                           reminder block (covers the turn-0 directive before
- *                           the first UserPromptSubmit).
+ * Codex hook entry. Branches on payload.hook_event_name:
+ *   - 'SessionStart'     -> emit the current ON or OFF state for a root session;
+ *                           ON uses the full directive, OFF uses runHook.
  *   - 'UserPromptSubmit' -> the normal per-prompt reminder cadence (runHook).
  *
  * Compiles to dist/hooks/orchestration-codex.js and is invoked as:
@@ -413,6 +413,85 @@ export const codexAdapter: CodexAdapter = {
  *
  * Returns the string to inject, or '' for nothing. Fully fail-safe.
  */
+/**
+ * Pi session mode (auto / on / off) — session-scoped, stored via marker.ts in
+ * the SAME state store as the orchestration enable/disable records.
+ *
+ * Injection semantics:
+ *   - UNSET and not yet asked  -> ask once for AUTO/ON/OFF in a new Codex
+ *     session unless the first prompt already answers or the project forbids Pi.
+ *     Mark the session asked so the choice is not requested on every prompt.
+ *   - asked but still UNSET    -> no further ask (the user may answer later via
+ *     orchestration-mode pi_session_mode, or state a preference in text).
+ *   - auto / on / off          -> append the mode's delegation policy text.
+ *
+ * The mode ONLY tunes Pi delegation eagerness. It is independent of the
+ * orchestration switch; permission semantics and the fixed Pi triple remain.
+ *
+ * None of the mode texts assert the orchestration STATE: only the
+ * <subagent-mcp state="..."> hook tag is authoritative. A mode line claiming
+ * "orchestration is ON" would contradict an OFF tag on the same turn.
+ */
+function appendPiSessionMode(injection: string, sessionKey: string | undefined): string {
+  if (!sessionKey) return injection;
+  const mode = marker.readPiSessionMode(sessionKey);
+  if (mode === "auto" || mode === "on" || mode === "off") {
+    const text =
+      mode === "auto"
+        ? PI_MODE_AUTO_TEXT
+        : mode === "on"
+          ? PI_MODE_ON_TEXT
+          : PI_MODE_OFF_TEXT;
+    return injection ? `${injection}\n\n${text}` : text;
+  }
+  if (marker.piSessionAsked(sessionKey)) return injection;
+  marker.markPiSessionAsked(sessionKey);
+  const ask =
+    "[pi-session-mode: UNSET] No session-local Pi mode has been recorded. " +
+    "Ask the user ONCE in this new session to choose Pi delegation eagerness " +
+    "before substantial task work, unless the first user message already " +
+    "chooses a mode or the project forbids Pi. Do not carry a prior session's " +
+    "Pi ON mode forward. This choice is separate from MCP orchestration OFF. " +
+    "Choose:\n" +
+    "1. AUTO — you judge when delegating bounded work to Pi is worthwhile\n" +
+    "2. ON — proactively use Pi for suitable bounded work in this session\n" +
+    "3. OFF — do not use Pi automatically in this session\n\n" +
+    "After the user's choice, orchestration-mode may record pi_session_mode for " +
+    "THIS session. If that recording call is rejected, treat only that call as " +
+    "rejected; it does not by itself disable launch_agent or change the user's " +
+    "Pi policy. Respect any explicit refusal of Pi delegation. " +
+    "Orchestration OFF or a missing hook tag does not imply Pi OFF. " +
+    "If the user's first message already states a " +
+    "clear preference (e.g. \"不要用子代理\" / \"积极使用 Pi\" / \"自动判断\"), map it " +
+    "directly to off / on / auto and skip asking.";
+  return injection ? `${injection}\n\n${ask}` : ask;
+}
+
+const PI_MODE_AUTO_TEXT =
+  "[pi-session-mode: AUTO] Only the verified hook tag reports MCP orchestration state; " +
+  "do not infer it from Pi AUTO. Independently of orchestration ON/OFF, decide for " +
+  "each task whether a bounded Pi worker would improve speed, quality, or " +
+  "context use enough to justify its cost and coordination. Delegate when it " +
+  "helps; otherwise work inline. No file count or task type alone decides. " +
+  "Use subagent-mcp launch_agent in Smart mode without provider/model/effort " +
+  "selectors; the owner ruleset routes to provider=pi, model=pi-balanced, " +
+  "effort=max. Keep planning, permission judgment and final integration.";
+
+const PI_MODE_ON_TEXT =
+  "[pi-session-mode: ON] Independently of orchestration ON/OFF, actively look " +
+  "for suitable bounded Pi work and prefer delegation when it is useful. " +
+  "Judge each task's scope, independence, expected benefit, cost, permissions, " +
+  "and coordination needs; file count or task type alone does not require a " +
+  "Pi launch. Use launch_agent in Smart mode without provider/model/effort selectors; " +
+  "the owner ruleset routes to provider=pi, model=pi-balanced, effort=max. " +
+  "No mode-setting call is needed first. Keep planning, permission judgment " +
+  "and final integration.";
+
+const PI_MODE_OFF_TEXT =
+  "[pi-session-mode: OFF] Do not launch Pi automatically in this session. If the " +
+  "user later explicitly asks for Pi, remind them to switch this session to AUTO or " +
+  "ON first.";
+
 export function runCodexHook(
   payload: HookPayload,
   env: NodeJS.ProcessEnv,
@@ -430,14 +509,11 @@ export function runCodexHook(
       const cwd = payload.cwd || process.cwd();
       const current = ownerKey(payload, cwd, adapter);
       marker.writeCurrentSession(cwd, current);
-      // Gate on the SAME effective-active computation runHook uses (disable /
-      // enable / latch / metering fail-safe), not the bare marker. SessionStart
-      // is turn 0 (grace window), so no metering fail-safe applies yet; passing
-      // false keeps a never-pre-enabled real session eligible for its turn-0
-      // directive via the latch/enable paths just like the UserPromptSubmit
-      // cadence would.
+      // ON uses the turn-0 full directive. OFF still emits a verified OFF tag
+      // through the normal cadence, so a trusted SessionStart hook does not
+      // look like an absent hook to the next model turn.
       if (!computeEffectiveActive(cwd, current, Date.now(), false)) {
-        return "";
+        return appendPiSessionMode(runHook(payload, env, adapter), current);
       }
 
       const turn = adapter.currentTurn(payload.transcript_path);
@@ -460,21 +536,27 @@ export function runCodexHook(
       // semantics — FULL + ON reminder, ack-latched CARRYOVER prepend, counter
       // re-baseline). SessionStart claims even on SAME-SESSION (resume) so
       // turn 0 is always covered.
-      return claimAndEmit(
-        cwd,
-        current,
-        turn,
-        m,
-        kind,
-        env,
-        adapter,
-        true,
-        phase,
-        usedPercentage
+      return appendPiSessionMode(
+        claimAndEmit(
+          cwd,
+          current,
+          turn,
+          m,
+          kind,
+          env,
+          adapter,
+          true,
+          phase,
+          usedPercentage
+        ),
+        current
       );
     }
     // UserPromptSubmit (and any other event) -> normal cadence.
-    return runHook(payload, env, adapter);
+    return appendPiSessionMode(
+      runHook(payload, env, adapter),
+      ownerKey(payload, payload.cwd || process.cwd(), adapter)
+    );
   } catch {
     return "";
   }

@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 // launchable-models.mjs — shared exclusion helper for routing-table validators.
 //
 // SSOT: this list MUST mirror the FULL table-id keys of FULL_TO_SHORT in
@@ -19,6 +20,8 @@ export const LAUNCHABLE_TABLE_MODELS = new Set([
   "claude-fable-5",
   "gpt-5.5",
   "gpt-5.6-sol",
+  "pi-cheap",
+  "pi-balanced",
 ]);
 
 // Known benchmarked-but-non-launchable ids intentionally absent from the shipped

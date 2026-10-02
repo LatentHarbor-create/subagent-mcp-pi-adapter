@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { atomicWriteFile } from "./orchestration/atomic-write.js";
@@ -143,17 +144,8 @@ export function ensureNativeAgentSuppression(
     }
     out.push({ host: "claude", layer: "permissions.deny", file, ...r });
   }
-  if (hosts.includes("codex")) {
-    const file = join(home, ".codex", "config.toml");
-    const text = existsSync(file) ? readFileSync(file, "utf8") : "";
-    const r = reconcileCodexNativeAgentDisable(text);
-    if (r.changed && !opts.dryRun) {
-      mkdirSync(dirname(file), { recursive: true });
-      backup(file);
-      atomicWriteFile(file, r.toml, { encoding: "utf8" });
-    }
-    out.push({ host: "codex", layer: "features.multi_agent", file, changed: r.changed, status: r.status });
-  }
+  // Codex native subagents are independent of subagent-mcp. Even a caller
+  // that includes "codex" must not change features.multi_agent.
   if (hosts.includes("gemini")) {
     const settings = join(home, ".gemini", "settings.json");
     const json = readJson(settings);

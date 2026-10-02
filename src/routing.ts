@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * Routing-table loader and pure resolver for auto-mode launches.
  *
@@ -18,7 +19,10 @@ import type { ApiProvider } from "./providers/types.js";
 export { slotInsert } from "./providers/slot-router.js";
 
 /** Launch model enum accepted by buildCommand. */
-export const LAUNCH_MODELS = ["haiku", "sonnet", "opus", "opus-4-8", "fable", "gpt-5.5", "gpt-5.6"] as const;
+export const LAUNCH_MODELS = [
+  "haiku", "sonnet", "opus", "opus-4-8", "fable", "gpt-5.5", "gpt-5.6",
+  "pi-cheap", "pi-balanced",
+] as const;
 type LaunchModel = (typeof LAUNCH_MODELS)[number];
 
 /** Launch effort enum accepted by buildCommand/resolveEffort. */
@@ -50,6 +54,10 @@ const FULL_TO_SHORT: Record<string, LaunchModel | Set<LaunchModel>> = {
   opus: "opus",
   "opus-4-8": "opus-4-8",
   fable: "fable",
+  // Pi logical profiles: subagent-mcp never sees the concrete provider/model;
+  // the Pi harness config owns that mapping.
+  "pi-cheap": "pi-cheap",
+  "pi-balanced": "pi-balanced",
 };
 
 export interface RoutingTable {
@@ -141,6 +149,9 @@ export function mapModelToProvider(model: string): Provider | null {
   if (model === "gpt-5.5" || model.startsWith("gpt-")) {
     return "codex";
   }
+  if (model === "pi-cheap" || model === "pi-balanced") {
+    return "pi";
+  }
   return null;
 }
 
@@ -150,7 +161,8 @@ export function mapModelToProvider(model: string): Provider | null {
  *
  * - haiku -> "none" sentinel (effort ignored by buildCommand; reported as-is).
  * - `none` on effort-capable models is invalid routing data -> null (skip candidate).
- * - ultracode is opus/opus-4-8 only; any other model clamps to "xhigh".
+ * - ultracode is opus/opus-4-8 only; any other model clamps to "xhigh" (the
+ *   table path normalizes before buildCommand, so it must not throw).
  * - codex has no max/ultracode; both clamp to "xhigh".
  * - unknown tier (not in the launch enum) -> null (skip candidate).
  *
@@ -169,7 +181,17 @@ export function normalizeEffort(
   const isOpus48 = provider === "claude" && (model === "opus" || model === "opus-4-8");
 
   if (effort === "ultracode") {
-    return isOpus48 ? "ultracode" : "xhigh";
+    // ultracode is opus/opus-4-8 only. On every other target the TABLE path
+    // clamps rather than rejecting: a table tier is normalized before it reaches
+    // buildCommand, so clamping prevents a resolveEffort throw at spawn time.
+    // (resolveEffort still THROWS on a direct ultracode call — the two paths
+    // differ by design; see SSOT §5 three-path table.)
+    //
+    // The clamp target must be a tier the target actually supports: pi's
+    // catalog has no xhigh, so pi clamps to max instead.
+    if (isOpus48) return "ultracode";
+    if (provider === "pi") return "max";
+    return "xhigh";
   }
 
   // Unknown tiers (not a launch-enum value, not handled above) -> skip.
@@ -179,6 +201,15 @@ export function normalizeEffort(
 
   if (provider === "codex" && effort === "max") {
     return "xhigh";
+  }
+
+  if (provider === "pi") {
+    // Pi (glm-5.3-flash) selectable thinking levels are low/high/max — never
+    // emit xhigh. max must stay max; medium maps up to high. ultracode is
+    // handled by the clamp above (-> max), so it never reaches this branch.
+    if (effort === "max" || effort === "xhigh") return "max";
+    if (effort === "medium") return "high";
+    return effort;
   }
 
   if (provider === "api") {
@@ -352,14 +383,14 @@ export function validatePresence(p: {
     return `Error: fallback_default is a split hint sentinel, not a launchable routing-table category.\n${SPLIT_HINT}\n${AUTO_HINT}`;
   }
 
-  // Override providers are launchable CLI providers only: "claude" or "codex".
-  // "api" is INTERNAL auto-slot routing (slotInsert) — populated with
+  // Override providers are launchable CLI providers: "claude", "codex", or
+  // "pi". "api" is INTERNAL auto-slot routing (slotInsert) — populated with
   // apiProvider metadata after candidate construction, never selectable as an
   // explicit/manual override. Reject a stale or enum-bypassed "api" (or any
   // other value) here, the shared validation boundary that runs before
   // buildCandidates, so it can never form a candidate, launch, or fail over.
-  if (provider && provider !== "claude" && provider !== "codex") {
-    return `Error: provider override must be claude or codex. Got: ${provider}. The api provider is internal auto-slot routing only and cannot be selected explicitly.\n${AUTO_HINT}`;
+  if (provider && provider !== "claude" && provider !== "codex" && provider !== "pi") {
+    return `Error: provider override must be claude, codex, or pi. Got: ${provider}. The api provider is internal auto-slot routing only and cannot be selected explicitly.\n${AUTO_HINT}`;
   }
 
   // provider+model must satisfy the existing match rule.
@@ -369,6 +400,9 @@ export function validatePresence(p: {
     }
     if (provider === "codex" && !["gpt-5.5", "gpt-5.6"].includes(model)) {
       return `Error: Codex provider only supports gpt-5.5 or gpt-5.6. Got: ${model}`;
+    }
+    if (provider === "pi" && !["pi-cheap", "pi-balanced"].includes(model)) {
+      return `Error: Pi provider only supports pi-cheap or pi-balanced. Got: ${model}`;
     }
   }
 

@@ -1,20 +1,8 @@
 {
-  "name": "subagent-mcp",
+  "name": "subagent-mcp-pi-adapter",
   "interface": {
-    "displayName": "subagent-mcp"
+    "displayName": "subagent-mcp Pi adapter"
   },
-  "plugins": [
-    {
-      "name": "subagent-mcp",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/Heretyc/subagent-mcp.git"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    }
-  ]
+  "plugins": [],
+  "x-fork-modification": "Modified for the subagent-mcp Pi adapter fork. Marketplace installation stays unconfigured until the owner supplies the fork URL."
 }

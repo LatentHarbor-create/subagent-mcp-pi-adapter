@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Windows Install: PATH, Escaping, CLI, WSL, Diagnostics
 
 Part of `install-windows.md`. Source: exchangepedia.com/2026/04/claudetools-claude-desktop-powershell-module.html [S14], fransiscuss.com/2025/04/22/fix-spawn-npx-enoent-windows11-mcp-server/ [S15]
@@ -53,9 +54,9 @@ Claude Desktop launches with a limited PATH inherited from the system, not your 
 Windows paths in JSON must use double backslashes OR forward slashes:
 
 ```json
-"command": "C:\\Users\\Lexi\\AppData\\Roaming\\npm\\my-server.cmd"
+"command": "C:\\Users\\example-user\\AppData\\Roaming\\npm\\my-server.cmd"
 // OR
-"command": "C:/Users/Lexi/AppData/Roaming/npm/my-server.cmd"
+"command": "C:/Users/example-user/AppData/Roaming/npm/my-server.cmd"
 ```
 
 Forward slashes work in most Windows contexts. Double backslash is more conventional.

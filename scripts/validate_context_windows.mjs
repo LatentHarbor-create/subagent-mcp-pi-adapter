@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import { existsSync, readFileSync } from "node:fs";
 import { isLaunchableModel } from "./lib/launchable-models.mjs";
 
@@ -119,6 +120,9 @@ function validateAuditCoverage(root, issues) {
       !Object.hasOwn(root.codex ?? {}, model)
     ) {
       issues.push(`profiler coverage: context-windows codex map missing audit model ${model}`);
+    }
+    if (model.startsWith("pi-") && !Object.hasOwn(root.pi ?? {}, model)) {
+      issues.push(`profiler coverage: context-windows pi map missing audit model ${model}`);
     }
   }
 }

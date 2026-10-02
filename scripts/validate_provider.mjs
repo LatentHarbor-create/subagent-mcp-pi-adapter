@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import { existsSync, readFileSync } from "node:fs";
 import { isLaunchableModel } from "./lib/launchable-models.mjs";
 
@@ -14,7 +15,7 @@ const requiredMetadata = ["version", "schema_version", "generated", "author", "a
 // confidence are retained only in routing-table-audit.json).
 const requiredPairing = ["provider", "model", "effort", "rank"];
 
-const VALID_PROVIDERS = new Set(["claude", "codex"]);
+const VALID_PROVIDERS = new Set(["claude", "codex", "pi"]);
 
 // Full effort ladder, weakest -> strongest. `null` is the fixed-low/unconfigured tier
 // (e.g. Haiku, gpt-5.5-pro). Any effort outside this ladder is flagged, never silently skipped.
@@ -155,6 +156,7 @@ const PROVIDER_FAMILY_PREFIXES = [
   ["claude-", "claude"],
   ["gpt-", "codex"],
   ["codex-", "codex"],
+  ["pi-", "pi"],
 ];
 function impliedProvider(model) {
   for (const [prefix, family] of PROVIDER_FAMILY_PREFIXES) {

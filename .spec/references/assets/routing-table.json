@@ -1,435 +1,411 @@
 {
-    "metadata":  {
-                     "author":  "Lexi Blackburn",
-                     "author_url":  "https://github.com/Heretyc/",
-                     "version":  "2.1.0",
-                     "generated_for":  "subagent-mcp cross-provider work-category routing feature",
-                     "source":  "C:\\Users\\Lexi\\AppData\\Local\\Temp\\catdebate\\consensus-categories.json",
-                     "source_date":  "2026-06-03",
-                     "generated":  "2026-06",
-                     "generated_at":  "2026-06-03T00:00:00Z",
-                     "status":  "pending_impartial_profiling",
-                     "rag_pointer":  ".spec/references/retrieval-map.md"
-                 },
-    "schema_version":  "2.1.0",
-    "default_category":  "fallback_default",
-    "classification_precedence":  [
-                                      "math_proof",
-                                      "security_review",
-                                      "debugging",
-                                      "quality_review",
-                                      "architecture",
-                                      "agentic_execution",
-                                      "data_analysis",
-                                      "coding",
-                                      "knowledge_synthesis",
-                                      "mechanical",
-                                      "prompt_engineering",
-                                      "vulnerability_research",
-                                      "molecular_biology",
-                                      "ml_accelerator_design"
-                                  ],
-    "_ordering_authority":  "classification_precedence is the SOLE ordering authority; categories is lookup-only.",
-    "classification_rule":  "walk_precedence_first_match_wins; on_adjacent_tie_escalate_one_tier_up; if_no_match -\u003e fallback_default",
-    "fallback_default":  {
-                             "id":  "fallback_default",
-                             "precedence":  99,
-                             "status":  "fallback_default",
-                             "rag_pointer":  ".spec/references/retrieval-map.md",
-                             "pairings":  [
-
-                                          ]
-                         },
-    "categories":  {
-                       "math_proof":  {
-                                          "id":  "math_proof",
-                                          "precedence":  1,
-                                          "status":  "pending_impartial_profiling",
-                                          "rag_pointer":  ".spec/references/work-categories.md"
-                                      },
-                       "security_review":  {
-                                               "id":  "security_review",
-                                               "precedence":  2,
-                                               "status":  "pending_impartial_profiling",
-                                               "rag_pointer":  ".spec/references/work-categories.md"
-                                           },
-                       "debugging":  {
-                                         "id":  "debugging",
-                                         "precedence":  3,
-                                         "status":  "pending_impartial_profiling",
-                                         "rag_pointer":  ".spec/references/work-categories.md"
-                                     },
-                       "quality_review":  {
-                                              "id":  "quality_review",
-                                              "precedence":  4,
-                                              "status":  "pending_impartial_profiling",
-                                              "rag_pointer":  ".spec/references/work-categories.md"
-                                          },
-                       "architecture":  {
-                                            "id":  "architecture",
-                                            "precedence":  5,
-                                            "status":  "pending_impartial_profiling",
-                                            "rag_pointer":  ".spec/references/work-categories.md"
-                                        },
-                       "agentic_execution":  {
-                                                 "id":  "agentic_execution",
-                                                 "precedence":  6,
-                                                 "status":  "pending_impartial_profiling",
-                                                 "rag_pointer":  ".spec/references/work-categories.md"
-                                             },
-                       "data_analysis":  {
-                                             "id":  "data_analysis",
-                                             "precedence":  7,
-                                             "status":  "pending_impartial_profiling",
-                                             "rag_pointer":  ".spec/references/work-categories.md"
-                                         },
-                       "coding":  {
-                                      "id":  "coding",
-                                      "precedence":  8,
-                                      "status":  "pending_impartial_profiling",
-                                      "rag_pointer":  ".spec/references/work-categories.md"
-                                  },
-                       "knowledge_synthesis":  {
-                                                   "id":  "knowledge_synthesis",
-                                                   "precedence":  9,
-                                                   "status":  "pending_impartial_profiling",
-                                                   "rag_pointer":  ".spec/references/work-categories.md"
-                                               },
-                       "mechanical":  {
-                                          "id":  "mechanical",
-                                          "precedence":  10,
-                                          "status":  "pending_impartial_profiling",
-                                          "rag_pointer":  ".spec/references/work-categories.md"
-                                      },
-                       "prompt_engineering":  {
-                                          "id":  "prompt_engineering",
-                                          "precedence":  11,
-                                          "status":  "composite_inferred",
-                                          "composite_inferred":  true,
-                                          "benchmark_alias":  null,
-                                          "parents":  [
-                                                          "knowledge_synthesis",
-                                                          "coding",
-                                                          "quality_review"
-                                                      ],
-                                          "rag_pointer":  ".spec/references/work-categories.md"
-                                      },
-                       "vulnerability_research":  {
-                                          "id":  "vulnerability_research",
-                                          "precedence":  12,
-                                          "status":  "composite_inferred",
-                                          "composite_inferred":  true,
-                                          "benchmark_alias":  null,
-                                          "parents":  [
-                                                          "security_review",
-                                                          "debugging",
-                                                          "coding"
-                                                      ],
-                                          "rag_pointer":  ".spec/references/work-categories.md"
-                                      },
-                       "molecular_biology":  {
-                                          "id":  "molecular_biology",
-                                          "precedence":  13,
-                                          "status":  "composite_inferred",
-                                          "composite_inferred":  true,
-                                          "benchmark_alias":  null,
-                                          "parents":  [
-                                                          "knowledge_synthesis",
-                                                          "data_analysis",
-                                                          "math_proof"
-                                                      ],
-                                          "rag_pointer":  ".spec/references/work-categories.md"
-                                      },
-                       "ml_accelerator_design":  {
-                                          "id":  "ml_accelerator_design",
-                                          "precedence":  14,
-                                          "status":  "composite_inferred",
-                                          "composite_inferred":  true,
-                                          "benchmark_alias":  null,
-                                          "parents":  [
-                                                          "architecture",
-                                                          "coding",
-                                                          "math_proof"
-                                                      ],
-                                          "rag_pointer":  ".spec/references/work-categories.md"
-                                      }
-                   },
-    "performance":  {
-                        "math_proof":  {
-                                           "id":  "math_proof",
-                                           "precedence":  1,
-                                           "status":  "pending_impartial_profiling",
-                                           "rag_pointer":  ".spec/references/retrieval-map.md",
-                                           "pairings":  [
-
-                                                        ]
-                                       },
-                        "security_review":  {
-                                                "id":  "security_review",
-                                                "precedence":  2,
-                                                "status":  "pending_impartial_profiling",
-                                                "rag_pointer":  ".spec/references/retrieval-map.md",
-                                                "pairings":  [
-
-                                                             ]
-                                            },
-                        "debugging":  {
-                                          "id":  "debugging",
-                                          "precedence":  3,
-                                          "status":  "pending_impartial_profiling",
-                                          "rag_pointer":  ".spec/references/retrieval-map.md",
-                                          "pairings":  [
-
-                                                       ]
-                                      },
-                        "quality_review":  {
-                                               "id":  "quality_review",
-                                               "precedence":  4,
-                                               "status":  "pending_impartial_profiling",
-                                               "rag_pointer":  ".spec/references/retrieval-map.md",
-                                               "pairings":  [
-
-                                                            ]
-                                           },
-                        "architecture":  {
-                                             "id":  "architecture",
-                                             "precedence":  5,
-                                             "status":  "pending_impartial_profiling",
-                                             "rag_pointer":  ".spec/references/retrieval-map.md",
-                                             "pairings":  [
-
-                                                          ]
-                                         },
-                        "agentic_execution":  {
-                                                  "id":  "agentic_execution",
-                                                  "precedence":  6,
-                                                  "status":  "pending_impartial_profiling",
-                                                  "rag_pointer":  ".spec/references/retrieval-map.md",
-                                                  "pairings":  [
-
-                                                               ]
-                                              },
-                        "data_analysis":  {
-                                              "id":  "data_analysis",
-                                              "precedence":  7,
-                                              "status":  "pending_impartial_profiling",
-                                              "rag_pointer":  ".spec/references/retrieval-map.md",
-                                              "pairings":  [
-
-                                                           ]
-                                          },
-                        "coding":  {
-                                       "id":  "coding",
-                                       "precedence":  8,
-                                       "status":  "pending_impartial_profiling",
-                                       "rag_pointer":  ".spec/references/retrieval-map.md",
-                                       "pairings":  [
-
-                                                    ]
-                                   },
-                        "knowledge_synthesis":  {
-                                                    "id":  "knowledge_synthesis",
-                                                    "precedence":  9,
-                                                    "status":  "pending_impartial_profiling",
-                                                    "rag_pointer":  ".spec/references/retrieval-map.md",
-                                                    "pairings":  [
-
-                                                                 ]
-                                                },
-                        "mechanical":  {
-                                           "id":  "mechanical",
-                                           "precedence":  10,
-                                           "status":  "pending_impartial_profiling",
-                                           "rag_pointer":  ".spec/references/retrieval-map.md",
-                                           "pairings":  [
-
-                                                        ]
-                                       },
-                        "prompt_engineering":  {
-                                           "id":  "prompt_engineering",
-                                           "precedence":  11,
-                                           "status":  "composite_inferred",
-                                           "composite_inferred":  true,
-                                           "parents":  [ "knowledge_synthesis", "coding", "quality_review" ],
-                                           "rag_pointer":  ".spec/references/retrieval-map.md",
-                                           "pairings":  [
-
-                                                        ]
-                                       },
-                        "vulnerability_research":  {
-                                           "id":  "vulnerability_research",
-                                           "precedence":  12,
-                                           "status":  "composite_inferred",
-                                           "composite_inferred":  true,
-                                           "parents":  [ "security_review", "debugging", "coding" ],
-                                           "rag_pointer":  ".spec/references/retrieval-map.md",
-                                           "pairings":  [
-
-                                                        ]
-                                       },
-                        "molecular_biology":  {
-                                           "id":  "molecular_biology",
-                                           "precedence":  13,
-                                           "status":  "composite_inferred",
-                                           "composite_inferred":  true,
-                                           "parents":  [ "knowledge_synthesis", "data_analysis", "math_proof" ],
-                                           "rag_pointer":  ".spec/references/retrieval-map.md",
-                                           "pairings":  [
-
-                                                        ]
-                                       },
-                        "ml_accelerator_design":  {
-                                           "id":  "ml_accelerator_design",
-                                           "precedence":  14,
-                                           "status":  "composite_inferred",
-                                           "composite_inferred":  true,
-                                           "parents":  [ "architecture", "coding", "math_proof" ],
-                                           "rag_pointer":  ".spec/references/retrieval-map.md",
-                                           "pairings":  [
-
-                                                        ]
-                                       }
-                    },
-    "cost_efficiency":  {
-                            "math_proof":  {
-                                               "id":  "math_proof",
-                                               "precedence":  1,
-                                               "status":  "pending_impartial_profiling",
-                                               "rag_pointer":  ".spec/references/retrieval-map.md",
-                                               "pairings":  [
-
-                                                            ]
-                                           },
-                            "security_review":  {
-                                                    "id":  "security_review",
-                                                    "precedence":  2,
-                                                    "status":  "pending_impartial_profiling",
-                                                    "rag_pointer":  ".spec/references/retrieval-map.md",
-                                                    "pairings":  [
-
-                                                                 ]
-                                                },
-                            "debugging":  {
-                                              "id":  "debugging",
-                                              "precedence":  3,
-                                              "status":  "pending_impartial_profiling",
-                                              "rag_pointer":  ".spec/references/retrieval-map.md",
-                                              "pairings":  [
-
-                                                           ]
-                                          },
-                            "quality_review":  {
-                                                   "id":  "quality_review",
-                                                   "precedence":  4,
-                                                   "status":  "pending_impartial_profiling",
-                                                   "rag_pointer":  ".spec/references/retrieval-map.md",
-                                                   "pairings":  [
-
-                                                                ]
-                                               },
-                            "architecture":  {
-                                                 "id":  "architecture",
-                                                 "precedence":  5,
-                                                 "status":  "pending_impartial_profiling",
-                                                 "rag_pointer":  ".spec/references/retrieval-map.md",
-                                                 "pairings":  [
-
-                                                              ]
-                                             },
-                            "agentic_execution":  {
-                                                      "id":  "agentic_execution",
-                                                      "precedence":  6,
-                                                      "status":  "pending_impartial_profiling",
-                                                      "rag_pointer":  ".spec/references/retrieval-map.md",
-                                                      "pairings":  [
-
-                                                                   ]
-                                                  },
-                            "data_analysis":  {
-                                                  "id":  "data_analysis",
-                                                  "precedence":  7,
-                                                  "status":  "pending_impartial_profiling",
-                                                  "rag_pointer":  ".spec/references/retrieval-map.md",
-                                                  "pairings":  [
-
-                                                               ]
-                                              },
-                            "coding":  {
-                                           "id":  "coding",
-                                           "precedence":  8,
-                                           "status":  "pending_impartial_profiling",
-                                           "rag_pointer":  ".spec/references/retrieval-map.md",
-                                           "pairings":  [
-
-                                                        ]
-                                       },
-                            "knowledge_synthesis":  {
-                                                        "id":  "knowledge_synthesis",
-                                                        "precedence":  9,
-                                                        "status":  "pending_impartial_profiling",
-                                                        "rag_pointer":  ".spec/references/retrieval-map.md",
-                                                        "pairings":  [
-
-                                                                     ]
-                                                    },
-                            "mechanical":  {
-                                               "id":  "mechanical",
-                                               "precedence":  10,
-                                               "status":  "pending_impartial_profiling",
-                                               "rag_pointer":  ".spec/references/retrieval-map.md",
-                                               "pairings":  [
-
-                                                            ]
-                                           },
-                            "prompt_engineering":  {
-                                               "id":  "prompt_engineering",
-                                               "precedence":  11,
-                                               "status":  "composite_inferred",
-                                               "composite_inferred":  true,
-                                               "parents":  [ "knowledge_synthesis", "coding", "quality_review" ],
-                                               "rag_pointer":  ".spec/references/retrieval-map.md",
-                                               "pairings":  [
-
-                                                            ]
-                                           },
-                            "vulnerability_research":  {
-                                               "id":  "vulnerability_research",
-                                               "precedence":  12,
-                                               "status":  "composite_inferred",
-                                               "composite_inferred":  true,
-                                               "parents":  [ "security_review", "debugging", "coding" ],
-                                               "rag_pointer":  ".spec/references/retrieval-map.md",
-                                               "pairings":  [
-
-                                                            ]
-                                           },
-                            "molecular_biology":  {
-                                               "id":  "molecular_biology",
-                                               "precedence":  13,
-                                               "status":  "composite_inferred",
-                                               "composite_inferred":  true,
-                                               "parents":  [ "knowledge_synthesis", "data_analysis", "math_proof" ],
-                                               "rag_pointer":  ".spec/references/retrieval-map.md",
-                                               "pairings":  [
-
-                                                            ]
-                                           },
-                            "ml_accelerator_design":  {
-                                               "id":  "ml_accelerator_design",
-                                               "precedence":  14,
-                                               "status":  "composite_inferred",
-                                               "composite_inferred":  true,
-                                               "parents":  [ "architecture", "coding", "math_proof" ],
-                                               "rag_pointer":  ".spec/references/retrieval-map.md",
-                                               "pairings":  [
-
-                                                            ]
-                                           }
-                        },
-    "global_invariants":  {
-                              "no_fabricated_rankings":  true,
-                              "rankings_require_impartial_profiler":  true,
-                              "fallback_default_precedence":  99,
-                              "subagent_output_contract":  "{status,summary,source_locators,risks,writes_requested}"
-                          }
+  "metadata": {
+    "author": "Lexi Blackburn",
+    "author_url": "https://github.com/Heretyc/",
+    "version": "2.1.0",
+    "generated_for": "subagent-mcp cross-provider work-category routing feature",
+    "source": "upstream-work-categories/consensus-categories.json",
+    "source_date": "2026-06-03",
+    "generated": "2026-06",
+    "generated_at": "2026-06-03T00:00:00Z",
+    "status": "pending_impartial_profiling",
+    "rag_pointer": ".spec/references/retrieval-map.md",
+    "source_path_redacted": true
+  },
+  "schema_version": "2.1.0",
+  "default_category": "fallback_default",
+  "classification_precedence": [
+    "math_proof",
+    "security_review",
+    "debugging",
+    "quality_review",
+    "architecture",
+    "agentic_execution",
+    "data_analysis",
+    "coding",
+    "knowledge_synthesis",
+    "mechanical",
+    "prompt_engineering",
+    "vulnerability_research",
+    "molecular_biology",
+    "ml_accelerator_design"
+  ],
+  "_ordering_authority": "classification_precedence is the SOLE ordering authority; categories is lookup-only.",
+  "classification_rule": "walk_precedence_first_match_wins; on_adjacent_tie_escalate_one_tier_up; if_no_match -> fallback_default",
+  "fallback_default": {
+    "id": "fallback_default",
+    "precedence": 99,
+    "status": "fallback_default",
+    "rag_pointer": ".spec/references/retrieval-map.md",
+    "pairings": []
+  },
+  "categories": {
+    "math_proof": {
+      "id": "math_proof",
+      "precedence": 1,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "security_review": {
+      "id": "security_review",
+      "precedence": 2,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "debugging": {
+      "id": "debugging",
+      "precedence": 3,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "quality_review": {
+      "id": "quality_review",
+      "precedence": 4,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "architecture": {
+      "id": "architecture",
+      "precedence": 5,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "agentic_execution": {
+      "id": "agentic_execution",
+      "precedence": 6,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "data_analysis": {
+      "id": "data_analysis",
+      "precedence": 7,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "coding": {
+      "id": "coding",
+      "precedence": 8,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "knowledge_synthesis": {
+      "id": "knowledge_synthesis",
+      "precedence": 9,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "mechanical": {
+      "id": "mechanical",
+      "precedence": 10,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "prompt_engineering": {
+      "id": "prompt_engineering",
+      "precedence": 11,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "benchmark_alias": null,
+      "parents": [
+        "knowledge_synthesis",
+        "coding",
+        "quality_review"
+      ],
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "vulnerability_research": {
+      "id": "vulnerability_research",
+      "precedence": 12,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "benchmark_alias": null,
+      "parents": [
+        "security_review",
+        "debugging",
+        "coding"
+      ],
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "molecular_biology": {
+      "id": "molecular_biology",
+      "precedence": 13,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "benchmark_alias": null,
+      "parents": [
+        "knowledge_synthesis",
+        "data_analysis",
+        "math_proof"
+      ],
+      "rag_pointer": ".spec/references/work-categories.md"
+    },
+    "ml_accelerator_design": {
+      "id": "ml_accelerator_design",
+      "precedence": 14,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "benchmark_alias": null,
+      "parents": [
+        "architecture",
+        "coding",
+        "math_proof"
+      ],
+      "rag_pointer": ".spec/references/work-categories.md"
+    }
+  },
+  "performance": {
+    "math_proof": {
+      "id": "math_proof",
+      "precedence": 1,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "security_review": {
+      "id": "security_review",
+      "precedence": 2,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "debugging": {
+      "id": "debugging",
+      "precedence": 3,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "quality_review": {
+      "id": "quality_review",
+      "precedence": 4,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "architecture": {
+      "id": "architecture",
+      "precedence": 5,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "agentic_execution": {
+      "id": "agentic_execution",
+      "precedence": 6,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "data_analysis": {
+      "id": "data_analysis",
+      "precedence": 7,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "coding": {
+      "id": "coding",
+      "precedence": 8,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "knowledge_synthesis": {
+      "id": "knowledge_synthesis",
+      "precedence": 9,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "mechanical": {
+      "id": "mechanical",
+      "precedence": 10,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "prompt_engineering": {
+      "id": "prompt_engineering",
+      "precedence": 11,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "parents": [
+        "knowledge_synthesis",
+        "coding",
+        "quality_review"
+      ],
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "vulnerability_research": {
+      "id": "vulnerability_research",
+      "precedence": 12,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "parents": [
+        "security_review",
+        "debugging",
+        "coding"
+      ],
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "molecular_biology": {
+      "id": "molecular_biology",
+      "precedence": 13,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "parents": [
+        "knowledge_synthesis",
+        "data_analysis",
+        "math_proof"
+      ],
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "ml_accelerator_design": {
+      "id": "ml_accelerator_design",
+      "precedence": 14,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "parents": [
+        "architecture",
+        "coding",
+        "math_proof"
+      ],
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    }
+  },
+  "cost_efficiency": {
+    "math_proof": {
+      "id": "math_proof",
+      "precedence": 1,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "security_review": {
+      "id": "security_review",
+      "precedence": 2,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "debugging": {
+      "id": "debugging",
+      "precedence": 3,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "quality_review": {
+      "id": "quality_review",
+      "precedence": 4,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "architecture": {
+      "id": "architecture",
+      "precedence": 5,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "agentic_execution": {
+      "id": "agentic_execution",
+      "precedence": 6,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "data_analysis": {
+      "id": "data_analysis",
+      "precedence": 7,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "coding": {
+      "id": "coding",
+      "precedence": 8,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "knowledge_synthesis": {
+      "id": "knowledge_synthesis",
+      "precedence": 9,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "mechanical": {
+      "id": "mechanical",
+      "precedence": 10,
+      "status": "pending_impartial_profiling",
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "prompt_engineering": {
+      "id": "prompt_engineering",
+      "precedence": 11,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "parents": [
+        "knowledge_synthesis",
+        "coding",
+        "quality_review"
+      ],
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "vulnerability_research": {
+      "id": "vulnerability_research",
+      "precedence": 12,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "parents": [
+        "security_review",
+        "debugging",
+        "coding"
+      ],
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "molecular_biology": {
+      "id": "molecular_biology",
+      "precedence": 13,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "parents": [
+        "knowledge_synthesis",
+        "data_analysis",
+        "math_proof"
+      ],
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    },
+    "ml_accelerator_design": {
+      "id": "ml_accelerator_design",
+      "precedence": 14,
+      "status": "composite_inferred",
+      "composite_inferred": true,
+      "parents": [
+        "architecture",
+        "coding",
+        "math_proof"
+      ],
+      "rag_pointer": ".spec/references/retrieval-map.md",
+      "pairings": []
+    }
+  },
+  "global_invariants": {
+    "no_fabricated_rankings": true,
+    "rankings_require_impartial_profiler": true,
+    "fallback_default_precedence": 99,
+    "subagent_output_contract": "{status,summary,source_locators,risks,writes_requested}"
+  },
+  "x-fork-modification": "Modified for the subagent-mcp Pi adapter fork."
 }

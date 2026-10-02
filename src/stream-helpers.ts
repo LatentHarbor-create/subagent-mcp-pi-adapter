@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 // Defensive parsing of a sub-agent's VISIBLE provider stream.
 //
 // "Visible" = provider stream events, summaries, and assistant messages a human
@@ -130,7 +131,7 @@ export function isNonVisibleStreamLine(provider: string, line: string): boolean 
     }
     return false;
   }
-  if (provider === "claude") {
+  if (provider === "claude" || provider === "pi") {
     if (e.type !== "assistant") return false;
     if (!e.message || typeof e.message !== "object") return false;
     const content = (e.message as Record<string, unknown>).content;
@@ -160,7 +161,7 @@ function collectLine(provider: string, line: string, out: VisibleStreamItem[]): 
   }
   if (!evt || typeof evt !== "object") return;
   if (provider === "codex") collectCodex(evt as Record<string, unknown>, out);
-  else if (provider === "claude") collectClaude(evt as Record<string, unknown>, out);
+  else if (provider === "claude" || provider === "pi") collectClaude(evt as Record<string, unknown>, out);
 }
 
 export function parseVisibleStream(
@@ -228,7 +229,7 @@ export function isTurnCompletedLine(provider: string, line: string): boolean {
     if (provider === "codex") {
       return evt.method === "turn/completed" || evt.type === "turn.completed";
     }
-    if (provider === "claude") {
+    if (provider === "claude" || provider === "pi") {
       return evt.type === "result";
     }
   } catch {
@@ -290,10 +291,10 @@ export function terminalTurnFailure(provider: string, line: string): string | nu
     }
     return null;
   }
-  if (provider === "claude") {
-    // A Claude result event flagged as an error (no assistant output produced).
+  if (provider === "claude" || provider === "pi") {
+    // A result event flagged as an error (no assistant output produced).
     if (evt.type === "result" && evt.is_error === true) {
-      return pick(evt.error, evt.result, evt.subtype) || "claude turn failed";
+      return pick(evt.error, evt.result, evt.subtype) || "pi turn failed";
     }
   }
   return null;

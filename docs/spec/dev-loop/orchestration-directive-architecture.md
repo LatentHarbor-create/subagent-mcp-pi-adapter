@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Orchestration Directive Architecture (schema=3) : RETRIEVAL MAP
 
 > **D21 : GENERATIVE SOURCE OF TRUTH.** The normative content lives in the leaf
@@ -12,9 +13,9 @@
 
 `subagent-mcp` ships a per-turn orchestration regime expressed redundantly across
 three surfaces (MCP `instructions`, upserted `INIT_BLOCK`, per-turn hook
-directives). ON = delegate-only orchestrator (launch_agent sole channel, no
-inline reads/writes). OFF = solo + provider-metered context tracking
-(context-metering.md); ENFORCED-ON at the 15% latch, with the handoff tools
+directives). ON = delegate-only orchestration for MCP-managed work. OFF permits
+inline work and task-fit MCP delegation under a separate Pi preference, plus provider-metered context tracking
+(context-metering.md); planning coaching at 15% only while explicitly ON, with the handoff tools
 unlocking at 20% (voluntary goal-context capture) and a mandatory handoff-write
 directive firing at 80% (HANDOFF_REQUIRED_THRESHOLD_PCT = CODEX_AUTOCOMPACT_PCT
 - 10; directive-only, coaching-off isolation); compaction detected when a single
@@ -25,7 +26,7 @@ has a canonical top-level UUID; Codex: fresh compacted window id/number). This
 triggers a mandatory one-turn handoff-read injection followed, after a
 successful read, by exactly four structured confirmation questions (see
 R-LATCH-15/R-HANDOFF-20/R-HANDOFF-80). State is reported SOLELY by the hook
-`<subagent-mcp state="...">` tag; hookless hosts → UNKNOWN → fail-safe ON.
+`<subagent-mcp state="...">` tag; hookless hosts → UNKNOWN → default OFF.
 Sub-agent first-line marker skips the whole regime.
 
 Orchestration mode is **orthogonal** to the permission system: orchestration
@@ -44,8 +45,8 @@ decisions : those run through the shared engine in `src/drivers.ts`.)
 | Leaf | Covers | Load when | Do NOT load when |
 |---|---|---|---|
 | `orchestration-directive-architecture/sections-00-04.md` | section 0 layering/redundancy, section 1 single tag schema, section 2 precedence/joint-binding, section 3 ON model; links to `sections-04.md` for section 4 OFF model | you need the tag schema, ON/OFF operating model, or precedence rules | you only need marker/persistence or test mechanics |
-| `.../sections-04.md` | section 4 OFF model: default-OFF, metering fail-safe, phase definitions (15%/20%/80%), CODEX_AUTOCOMPACT_PCT/HANDOFF_REQUIRED_THRESHOLD_PCT/COMPACTION_DROP_THRESHOLD_PCT constants, 5-call rule deletion | implementing or testing the OFF-mode phase thresholds and metering-driven enforcement | you need the ON model or tag schema (load `sections-00-04.md`) |
-| `.../sections-05-09.md` | section 5 no-hook fail-safe ON + opt-out, section 6 first-line exemption + launch_agent upsert, section 7 dropout/HALT, section 8 markers/MIGRATE_RE/collapse; links to `sections-09.md` for section 9 cross-provider matrix | debugging hookless hosts, sub-agent fork-bomb prevention, dropout, or block migration | you need the ON/OFF model or appendices |
+| `.../sections-04.md` | section 4 OFF model: default-OFF, explicit enable, phase definitions (15%/20%/80%), CODEX_AUTOCOMPACT_PCT/HANDOFF_REQUIRED_THRESHOLD_PCT/COMPACTION_DROP_THRESHOLD_PCT constants, 5-call rule deletion | implementing or testing the OFF-mode phase thresholds and metering-driven enforcement | you need the ON model or tag schema (load `sections-00-04.md`) |
+| `.../sections-05-09.md` | section 5 no-hook default OFF, section 6 first-line exemption + launch_agent upsert, section 7 dropout/HALT, section 8 markers/MIGRATE_RE/collapse; links to `sections-09.md` for section 9 cross-provider matrix | debugging hookless hosts, sub-agent fork-bomb prevention, dropout, or block migration | you need the ON/OFF model or appendices |
 | `.../sections-09.md` | section 9 cross-provider behavior matrix (Claude Code CLI, Codex, Gemini, Desktop) | checking per-host hook/state/tool behavior | you need marker or test specs |
 | `.../sections-10-13.md` | section 10 persistence/carryover/disable, section 11 tests, section 12 failure matrix, section 13 structured-question tool map | reasoning about marker persistence, carryover, disable, or the test gates | you need tag/ON/OFF semantics |
 | `.../derivation-map.md` | section 14 R-ID definitions, artifact×R-ID rendering, 5-call tombstone | tracing which artifact renders which canonical rule | authoring runtime behavior |
@@ -75,10 +76,10 @@ These entries are MAP ONLY. All normative content for swarm and sub-orchestrator
 - `contextCoaching` user setting / coaching-off isolation (mandatory lifecycle injections always fire) → `context-metering.md` (section 3.1), `handoff.md`; install-time prompts → `docs/spec/dev-loop/init-registry-and-update.md`
 - `CODEX_AUTOCOMPACT_PCT` / `HANDOFF_REQUIRED_THRESHOLD_PCT` / `COMPACTION_DROP_THRESHOLD_PCT` constants → `context-metering.md` (section 3), `handoff.md`, `sections-04.md`; setup reconciliation → `init-registry-and-update.md`, `docs/install/claude-code-cli.md`
 - Claude/Codex usage lift, state migration, display → `context-metering-usage-lift.md` (sections 6-10)
-- fail-safe ON / UNKNOWN / one-time opt-out → `sections-05-09.md` (section 5)
+- default OFF / UNKNOWN → `sections-05-09.md` (section 5)
 - first-line `<this is a request from a parent process>` skip + upsert → `sections-05-09.md` (section 6), `appendix-a6-a7.md` (A7)
 - schema=3 markers, MIGRATE_RE, duplicate collapse → `sections-05-09.md` (section 8), `appendix-a6-a7.md` (A6)
-- default-ON, disable-record, carryover, disable → `sections-10-13.md` (section 10) + `src/orchestration/marker.ts` (truth source)
+- default-OFF, explicit enable, carryover, disable → `sections-10-13.md` (section 10) + `src/orchestration/marker.ts` (truth source)
 - tests (gating/non-gating), 5-call gate → `sections-10-13.md` (section 11), `derivation-map.md` (section 14.3)
 - INIT_BLOCK / MCP instructions verbatim → `appendix-a1-a4.md`
 - the 9 directive files verbatim → `appendix-a5-directives.md`
@@ -89,7 +90,7 @@ These entries are MAP ONLY. All normative content for swarm and sub-orchestrator
 ## Trigger phrases
 
 "orchestration ON/OFF", "delegate-only", "launch_agent", "read-escalation
-ladder", "jointly binding / supremacy clause", "fail-safe ON", "no-hook / UNKNOWN
+ladder", "jointly binding / supremacy clause", "default OFF", "no-hook / UNKNOWN
 state", "first-line exemption / fork-bomb", "INIT_BLOCK", "MIGRATE_RE / schema=3
 markers", "ensureParentMarker", "R-ID derivation", "5-call rule",
 "swarm", "agentic swarm", "sub-orchestrator", "performance pin", "swarm dispatch",

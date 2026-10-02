@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Tool Reference
 
 The tools exposed by `subagent-mcp`. See [README.md](../README.md) for the
@@ -163,7 +164,7 @@ Toggle or query per-project ORCHESTRATION MODE state (keyed by cwd).
 
 Returns: `{ orchestration_mode, marker_path }`.
 
-When ON, act as a delegate-only orchestrator: every step runs in a sub-agent; inline-by-right does not exist; a non-delegable atomic step needs a one-time user-approved exception. ON/OFF is governed by session-keyed state; `orch-<cwdHash>.flag` is claim/carryover state only. DISABLE is never on your own initiative : you may PROPOSE OFF, but only explicit user permission (via the structured-question tool) may set `enabled:false`. Per-turn injection fires only in CLI hosts that load the bundled hook; desktop hosts toggle state but inject nothing.
+When ON, act as a delegate-only orchestrator for MCP-managed work; a non-delegable atomic step needs a one-time user-approved exception. ON/OFF is governed by session-keyed state; `orch-<cwdHash>.flag` is claim/carryover state only. DISABLE is never on your own initiative: only explicit user permission may set `enabled:false`. Codex CLI and Desktop inject per-turn state when both bundled hooks are configured and trusted. Without a trusted hook, the tag is absent and instruction fallback defaults to OFF. Pi preference and Codex native subagents remain independent of this switch.
 
 ---
 

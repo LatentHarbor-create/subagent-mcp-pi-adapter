@@ -1,39 +1,33 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 <!-- Part of orchestration-directive-architecture (split). Retrieval map: ../orchestration-directive-architecture.md -->
 
-## section 5 : No-Hook Fail-Safe-ON + One-Time Opt-Out (D18 / S6 / D6 / D7)
+## section 5 : No-Hook Default-OFF (D18 / S6 / D6 / D7)
 
-Hosts that inject no hook block (Gemini, desktop apps, any session without hook
-injection : D6) cannot report `state`. The tag is absent, so state is UNKNOWN,
+Hosts that inject no hook block (unsupported, unconfigured, or untrusted hooks :
+D6) cannot report `state`. The tag is absent, so state is UNKNOWN,
 never an emitted `state="unknown"` value.
 
-On such a host (S6, three parts):
+On such a host (S6):
 
 1. Emit the UNKNOWN-STATE WARNING (base literal from C3):
-   `subagent-mcp: no hook injection detected : orchestration state unknown; defaulting to ON`
-2. Explain why: no hook injection was detected, so the agent cannot verify
-   orchestration state and defaults to ON to prevent uncontrolled inline
-   execution.
-3. Allow a one-time per-session opt-out: if the user is not running an
-   orchestration workflow, they may explicitly opt out of ON for this session.
-   This opt-out does not persist and is not recorded. The next new session
-   defaults back to the ON warning.
+   `subagent-mcp: no hook injection detected : orchestration state unknown; defaulting to OFF`
+2. Without a fresh, verified ON signal, do not impose the delegate-only rule;
+   inline work is permitted. The separate Pi preference still governs optional
+   task-fit delegation through `launch_agent`. Do not infer orchestration ON or
+   Pi OFF from a missing tag or self-reported prose.
 
-The sub-agent first-line exemption in section 6 is the only automatic
-suppressor of this fail-safe default. It prevents fail-safe ON from recursing
-into child sessions.
+The sub-agent first-line exemption in section 6 still prevents orchestration
+instructions from recursing into child sessions.
 
 ### 5.1 No-hook hosts vs hook-covered hosts
 
-The context-metered redesign does not change no-hook host behavior. No-hook
-hosts cannot report state, cannot be metered, and keep the existing
-default-ON-when-UNKNOWN doctrine.
+No-hook hosts cannot report state or be metered, so they default OFF when no
+verified state tag is present.
 
 Distinguish this from the hook-covered-host rule in `sections-00-04.md` and
 `context-metering.md`: on hosts that do fire hooks, orchestration starts
 default OFF per session, and ON is reached only by an explicit enable record,
-an active 15% latch, or the metering-undetectable fail-safe. That metering
-fail-safe applies only where hooks fire but provider-reported context size
-cannot be measured.
+an explicit session enable only. Undetectable metering does not enable orchestration.
 
 ---
 

@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Install : Codex CLI
 
 Full support: per-turn hook (`SessionStart` + `UserPromptSubmit`) **plus** the
@@ -55,14 +56,10 @@ Add the block below **only** if a profile/admin disabled hooks:
 ```toml
 [features]
 hooks = true
-multi_agent = false
 ```
 
-`multi_agent = false` is required: `launch_agent` is the only supported
-sub-agent launch channel in both orchestration states. Codex has no
-repo-supported native-agent PreToolUse/policy guard here, so this static
-disable is the honest defense-in-depth layer; the per-turn hook still handles
-subagent-mcp directive injection.
+The `multi_agent` setting belongs to Codex. subagent-mcp setup and init leave
+it untouched; Codex native subagents remain independent of MCP orchestration.
 
 ---
 
@@ -168,9 +165,8 @@ enabled = true  # or false
    (`short-off.md` while OFF) between).
 8. **Field-name sanity:** if the hook behaves on a 600s timeout instead of
    ~10s, you likely left `timeoutSec` instead of `timeout`.
-8. **Native-agent suppression:** `~/.codex/config.toml` has
-   `[features] multi_agent = false`. There is no additional Codex native-agent
-   hook/policy guard documented by this repo.
+9. **Native-agent independence:** changing subagent-mcp orchestration or Pi
+   routing does not modify Codex's `multi_agent` setting or native launch path.
 
 ## Reversibility
 

@@ -1,23 +1,28 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 <!-- Part of orchestration-directive-architecture (split from sections-00-04.md). Retrieval map: ../orchestration-directive-architecture.md -->
 
 ## section 4 : Orchestration OFF Model (B / D3 / D4 / D11 / D15 / D24 / D27)
 
-Orchestration starts **OFF by default** every session (hook-covered hosts); it turns ON only via
-an explicit user enable, an active 15% latch, or the metering-undetectable fail-safe. When OFF you work solo.
+Orchestration starts **OFF by default** every session and turns ON only through
+an explicit user enable. OFF removes the delegate-only requirement: inline work
+is permitted, and suitable bounded work may still be delegated through
+`launch_agent` according to the independent Pi session preference. AUTO judges
+task fit, ON proactively delegates suitable work, and Pi OFF prevents automatic
+Pi launches. An unset Pi mode follows explicit user and project policy. Neither
+an OFF tag nor a missing hook tag changes Pi mode. Project prohibitions and
+permission, model, and worktree rules still apply.
 
 - **Provider-metered footprint (D3/D27):** OFF-mode footprint is now
   provider-metered (context-metering.md) and is never estimated by the model;
   the D3/D27 self-estimation note is RETIRED. Hooks lift provider-reported
   usage only and never tokenize or count lines hook-side.
-- **Metering-undetectable fail-safe (D4 / D15):** when context usage cannot be
-  measured for the session (no recognized model window, or no provider usage
-  numbers), the hook fails safe to **ON**. A fail-safe-ON turn still reports
-  `phase=normal`, because phase reflects metering, not enforcement.
+- **Undetectable metering (D4 / D15):** when context usage cannot be measured,
+  the hook reports `phase=normal` and preserves the explicit ON/OFF choice.
 - **Phase constants (all FIXED, never user-configurable):**
 
   | Constant | Value | Meaning |
   |---|---|---|
-  | `PLAN_LATCH_THRESHOLD_PCT` | 15 | Triggers the persisted orchestration latch |
+  | `PLAN_LATCH_THRESHOLD_PCT` | 15 | Triggers one-time planning coaching only while explicitly ON |
   | `HANDOFF_UNLOCK_THRESHOLD_PCT` | 20 | Unlocks voluntary handoff-write (goal-context capture) |
   | `HANDOFF_REQUIRED_THRESHOLD_PCT` (H) | 80 | Mandatory handoff write threshold |
   | `CODEX_AUTOCOMPACT_PCT` | 90 | Codex threshold and value written to Claude `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` (H = CODEX_AUTOCOMPACT_PCT - 10) |
@@ -34,7 +39,7 @@ an explicit user enable, an active 15% latch, or the metering-undetectable fail-
   phase): true when `used_percentage >= 80` AND no eligible prepared handoff
   record exists for the current session.
 
-- **plan phase (15%):** a persisted latch force-enables orchestration and
+- **plan phase (15%):** in an explicitly enabled session, a persisted latch
   coaches a one-time planning stop of AT LEAST 4 open planning questions (see
   sections-10-13, R-LATCH-15).
 - **handoff phase (20%):** the handoff-write/read/clear tools unlock, with no
@@ -51,8 +56,9 @@ an explicit user enable, an active 15% latch, or the metering-undetectable fail-
   After a successful read, the caller asks exactly four structured confirmation
   questions before acting. `contextCoaching` does NOT mute mandatory lifecycle
   injections.
-- **You never assert ON yourself in OFF mode** : you only work solo or ask;
-  state is authoritative from the hook.
+- **You never assert ON yourself in OFF mode**: inline work and optional
+  task-fit delegation are both allowed; the hook alone reports orchestration
+  state. Pi delegation does not turn orchestration ON.
 
 **THE 5-CALL RULE IS DELETED (D11 / D24).** It is gone from the INIT_BLOCK, MCP
 `instructions`, both tool descriptions, all nine directive files, and `hook-core.ts`

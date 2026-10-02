@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import assert from "node:assert/strict";
 import test from "node:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -185,22 +186,22 @@ test("schema=4 managed block normalizes to exactly one schema=5 block", () => {
     assert.ok(out.includes("Intro text."), "leading content preserved");
     assert.ok(out.includes("Trailing text."), "trailing content preserved");
 
-    // The canonical block includes the sole-channel-BOTH-STATES directive.
+    // The canonical block keeps Codex native agents independent in both states.
     assert.ok(
-      out.includes("SOLE CHANNEL — BOTH ORCHESTRATION STATES"),
-      "schema=5 includes the both-states sole-channel directive",
+      out.includes("CHANNEL BOUNDARY — BOTH ORCHESTRATION STATES"),
+      "schema=5 includes the both-states channel boundary",
     );
-    assert.match(out, /whether orchestration is ON or OFF/,
-      "sole channel applies in BOTH orchestration states");
+    assert.match(out, /ON or OFF/,
+      "channel boundary applies in BOTH orchestration states");
 
     // The canonical block includes the smart/automatic model-selection default.
     assert.ok(
-      out.includes("MODEL SELECTION: defaults to smart/automatic"),
+      out.includes("MODEL SELECTION: subagent-mcp launches default to smart/automatic"),
       "schema=5 states the smart/automatic model-selection default",
     );
 
     // The canonical block includes the applicable-skill read carve-out.
-    assert.match(out, /read the SKILL\.md of a skill that serves the user's current request/,
+    assert.match(out, /Applicable skill instructions may be read directly only within that skill's folder/,
       "schema=5 carries the skill-read carve-out");
 
     // Forbidden disable polarity is absent.

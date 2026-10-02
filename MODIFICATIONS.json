@@ -1,0 +1,459 @@
+{
+  "upstream": "https://github.com/Heretyc/subagent-mcp",
+  "reference_revision": "58a746130af9800508c9d5fe06717cdc88757394",
+  "modified_files": [
+    {
+      "path": ".agents/plugins/marketplace.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": ".claude-plugin/plugin.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": ".codex-plugin/plugin.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": ".gitignore",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": ".spec/references/assets/routing-table.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "AGENTS.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "agents/GIT_COLLABORATION.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "CHANGELOG.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "CLAUDE.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/carryover-claude.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/carryover-codex.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/handoff-claude.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/handoff-codex.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/latch-claude.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/latch-codex.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/orchestration-codex.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/reminder-off-claude.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/reminder-off-codex.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/reminder-on.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/session-handoff-required.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/short-off.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "directives/short-on.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/install/_INDEX.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/install/codex-cli.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/install/codex-desktop.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/registration.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/release-notes.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/audit-target-provenance.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/git-collaboration.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/orchestration-directive-architecture.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/orchestration-directive-architecture/appendix-a1-a4.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/orchestration-directive-architecture/appendix-a5-directives.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/orchestration-directive-architecture/derivation-map.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/orchestration-directive-architecture/sections-00-04.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/orchestration-directive-architecture/sections-04.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/orchestration-directive-architecture/sections-05-09.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/orchestration-directive-architecture/sections-09.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/spec/dev-loop/orchestration-directive-architecture/sections-10-13.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "docs/tools.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "GEMINI.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "package-lock.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "package.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "README.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "README.upstream.md",
+      "upstream_path": "README.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "scripts/build_routing_table.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "scripts/check_audit_target.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "scripts/check_mcp_compliance.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "scripts/check_package_keys.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "scripts/check_version_sync.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "scripts/copy-provider.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "scripts/lib/launchable-models.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "scripts/validate_context_windows.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "scripts/validate_provider.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "skills/mcp-builder/references/config-claude/02-transport-and-windows-paths.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "skills/mcp-builder/references/install-windows/02-path-escaping-cli-wsl-diagnostics.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/advanced-ruleset.py",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/configure.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/context-windows.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/doctor.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/drivers.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/effort.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/hooks/orchestration-codex.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/index.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/init.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/native-suppression.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/orchestration/hook-core.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/orchestration/marker.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/orchestration/metering.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/orchestration/state-sweep.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/orchestration/update-check.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/permission-classes.test-vectors.jsonc",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/pi-driver.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/pi-extensions/ask_permission.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/pi-protocol.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/platform.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/routing-table-audit.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/routing.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/ruleset.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/setup.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "src/stream-helpers.ts",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/approval-sanitizer.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/cli-args.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/doctor.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/effort-parity.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/effort.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/governance-checks.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/handler-validation.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/hook-core-guard.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/index-handler.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/init-global.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/init-migration.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/injection-text.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/lifecycle-matrix.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/mirror-fragments.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/native-suppression.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/orchestration-adapters.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/orchestration-directives.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/orchestration-hook-core.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/orchestration-marker.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/output-hook-registration.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/pi-driver.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/pi-mode-forcing.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/pi-protocol.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/pi-session-mode.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/routing.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/ruleset-exec.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/ruleset.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/setup-repair.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/update-check.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "tsconfig.json",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    }
+  ]
+}

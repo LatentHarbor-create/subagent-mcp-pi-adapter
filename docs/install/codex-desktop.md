@@ -1,9 +1,10 @@
-# Install : Codex Desktop / IDE extension (MCP-only)
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
+# Install : Codex Desktop
 
-The Codex Desktop / IDE extension has **no per-turn hook host**, so it gets the
-**MCP server only**. The `orchestration-mode` tool still flips the marker, but
-**nothing is injected per turn** : documented degradation, not a bug. For
-per-turn injection use the [Codex CLI](codex-cli.md) host.
+Codex Desktop can run the same `SessionStart` and `UserPromptSubmit` command
+hooks as Codex CLI. User hooks must be reviewed and trusted before they run.
+Until then, the MCP server can answer tool calls, but no hook tag is injected;
+the instruction fallback treats orchestration as UNKNOWN and defaults to OFF.
 
 Do the [build prerequisite](_INDEX.md) first.
 
@@ -34,9 +35,11 @@ Or via the CLI helper (writes the same shared file):
 codex mcp add subagent-mcp -- node /abs/path/to/subagent-mcp/dist/index.js
 ```
 
-The `hooks.json` per-turn hook from the [Codex CLI guide](codex-cli.md) is
-**not** loaded here : Desktop/IDE has no hook host. Do not expect per-turn
-injection.
+Configure the [Codex CLI guide](codex-cli.md) `~/.codex/hooks.json` entries for
+both `SessionStart` and `UserPromptSubmit`. Review and trust both definitions
+in Codex before expecting hook injection. `SessionStart` emits the initial ON
+or OFF tag; `UserPromptSubmit` refreshes the tag on each prompt and carries
+the independent Pi session preference.
 
 ---
 
@@ -46,6 +49,7 @@ injection.
 2. **Tools appear:** open the extension and confirm the `subagent-mcp` tools
    (`orchestration-mode`, `launch_agent`, etc.) are listed via the shared
    `config.toml`.
-3. **Expected degradation:** toggle `orchestration-mode` ON and confirm that
-   **no** per-turn directive is injected (no hook host). The marker flips;
-   injection does not occur. This is the intended behavior.
+3. **Hook trust:** confirm both user hooks have been reviewed and trusted.
+4. **State tag:** start a new session and confirm a `<subagent-mcp state="off">`
+   tag is injected by default. An explicit session enable changes it to ON.
+   Pi delegation preference remains separate in either state.

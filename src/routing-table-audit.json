@@ -901,7 +901,8 @@
       "algorithm": "sha256",
       "hex": "92c6b40a2cc4bba6c43270ebd3aa5a4f6c4e3024b5086c2cdcf4acbddf9c0a7b",
       "short": "92c6b40a2cc4",
-      "path": "C:\\Users\\Lexi\\AppData\\Local\\Temp\\model-profiler\\20260717-full-01\\structured-dataset.json"
+      "path": "upstream-model-profile/structured-dataset.json",
+      "source_path_redacted": true
     },
     "dataset_shape_summary": {
       "model_count": 8,
@@ -12280,5 +12281,6 @@
         ]
       }
     ]
-  }
+  },
+  "x-fork-modification": "Modified for the subagent-mcp Pi adapter fork."
 }

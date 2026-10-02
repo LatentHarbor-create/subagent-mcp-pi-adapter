@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Release Notes
 
 Operator-facing release notes for `subagent-mcp`. Newest version first.
@@ -22,7 +23,7 @@ Historical entries:
 - Upgrade silently removes legacy `Task`, `Explore`, and `Agent(Explore)` deny
   entries. `doctor` offers repair, while `uninstall` reverts the smcp-owned
   Claude and Codex suppression state without touching unrelated settings.
-- Codex native-agent suppression remains `multi_agent = false` only.
+- Codex native subagents remain independent of subagent-mcp orchestration and routing.
 
 ---
 

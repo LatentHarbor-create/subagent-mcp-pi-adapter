@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 // build_routing_table.mjs — Deterministic routing-table builder.
 //
 // Authority: skills/model-profiler/references/tier-ranking-and-scoring.md +
@@ -98,7 +99,15 @@ function resolveRunId() {
       }
     }
   }
-  return `run-${DATASET_DATE}-${DATASET_HASH_SHORT}`;
+  // Compute the content hash HERE instead of referencing the later-initialized
+  // DATASET_HASH_SHORT (a bare offline run reaches this branch and previously
+  // died on the temporal-dead-zone ReferenceError). Same raw-byte formula as
+  // the main hash block, so the derived id matches DATASET_SHA256 exactly.
+  const fallbackHash = createHash("sha256")
+    .update(readFileSync(DATASET_PATH, "utf8").replace(/^﻿/, ""))
+    .digest("hex")
+    .slice(0, 12);
+  return `run-${DATASET_DATE}-${fallbackHash}`;
 }
 const RUN_ID = resolveRunId();
 // #13: write run-id to both the legacy fixed path (for update_seed_sites backward compat) AND
@@ -321,6 +330,7 @@ const PROVIDER_FAMILY_PREFIXES = [
   ["claude-", "claude"],
   ["gpt-", "codex"],
   ["codex-", "codex"],
+  ["pi-", "pi"],
 ];
 function supportsFleetProvider(model) {
   return PROVIDER_FAMILY_PREFIXES.some(([prefix]) => String(model || "").startsWith(prefix));

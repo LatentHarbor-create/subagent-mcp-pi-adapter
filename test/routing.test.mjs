@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * Unit tests for src/routing.ts (compiled to dist/routing.js).
  *
@@ -127,6 +128,18 @@ test("provider_model filter: claude+sonnet returns only sonnet pairings", () => 
 //       via normalizeEffort (the fixture has no opus-4-8@ultracode pairing).
 //    d) haiku@none -> effort is ignored; resolver reports "none" as placeholder
 // ---------------------------------------------------------------------------
+test("effort normalization: pi@max stays max (glm-5.3-flash supports max)", () => {
+  assert.equal(normalizeEffort("pi", "pi-balanced", "max"), "max");
+});
+test("effort normalization: pi@xhigh maps to max (no xhigh in pi catalog)", () => {
+  assert.equal(normalizeEffort("pi", "pi-cheap", "xhigh"), "max");
+});
+test("effort normalization: pi@medium maps up to high", () => {
+  assert.equal(normalizeEffort("pi", "pi-balanced", "medium"), "high");
+});
+test("effort normalization: pi@high stays high", () => {
+  assert.equal(normalizeEffort("pi", "pi-balanced", "high"), "high");
+});
 test("effort normalization: gpt-5.5@max clamps to xhigh (codex has no max)", () => {
   // Codex max is invalid — normalizing prevents a resolveEffort throw at spawn time
   const result = normalizeEffort("codex", "gpt-5.5", "max");
