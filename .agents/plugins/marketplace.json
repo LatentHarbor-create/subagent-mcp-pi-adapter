@@ -4,5 +4,5 @@
     "displayName": "subagent-mcp Pi adapter"
   },
   "plugins": [],
-  "x-fork-modification": "Modified for the subagent-mcp Pi adapter fork. Marketplace installation stays unconfigured until the owner supplies the fork URL."
+  "x-fork-modification": "Modified for the subagent-mcp Pi adapter fork. Use direct MCP registration documented in README; this catalog has no installable entry."
 }

@@ -3,7 +3,7 @@
 
 Pi workers for Codex through a local MCP stdio server. The adapter keeps a Pi RPC process alive across messages, applies the shared permission bridge, and reports completion after the Pi session settles. Codex native subagents remain an independent channel.
 
-This is an Apache-2.0 derivative of [Heretyc/subagent-mcp](https://github.com/Heretyc/subagent-mcp). See [LICENSE](LICENSE), [NOTICE](NOTICE), and [MODIFICATIONS.md](MODIFICATIONS.md). The package is private while GitHub owner and publishing metadata are pending.
+This is an Apache-2.0 derivative of [Heretyc/subagent-mcp](https://github.com/Heretyc/subagent-mcp). See [LICENSE](LICENSE), [NOTICE](NOTICE), and [MODIFICATIONS.md](MODIFICATIONS.md). GitHub source: [LatentHarbor-create/subagent-mcp-pi-adapter](https://github.com/LatentHarbor-create/subagent-mcp-pi-adapter). `private: true` prevents npm registry publication; it does not prevent building or running the adapter.
 
 See [PRIVACY.md](PRIVACY.md) for the publication boundary and generic configuration examples.
 
@@ -30,17 +30,21 @@ pi --version
 
 Configure and sign in to the desired provider using Pi. Do not put credentials in this repository. The adapter integration is tested with Pi 1.0.0; newer Pi versions need verification.
 
+**Fill in your own settings before use:** [CONFIGURATION.md](CONFIGURATION.md) lists required paths, local Pi model/auth setup, codemode, optional blocked directories, and failure symptoms. Examples are placeholders. No provider credentials or owner-specific directory policy are bundled.
+
 ## Build from source
 
-From this checkout:
+Clone the fork, then build:
 
 ```sh
+git clone https://github.com/LatentHarbor-create/subagent-mcp-pi-adapter.git
+cd subagent-mcp-pi-adapter
 npm ci --ignore-scripts
 npm run build
 npm run test:pi
 ```
 
-`npm test` runs the broader inherited test suite. Dependency installation does not register the MCP server or change Codex settings.
+`npm test` runs the broader inherited test suite and requires a Git checkout. A source ZIP can be built and checked with `npm run test:pi`. Dependency installation does not register the MCP server or change Codex settings.
 
 ## Register the MCP server
 
@@ -96,6 +100,6 @@ The script uses local Pi configuration and runs synthetic permission dialogues w
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). [Inherited engine documentation](README.upstream.md) describes the general subagent-mcp framework; this README defines the Pi-only launch profile. Inherited npm and marketplace installation examples install the upstream package, not this private fork preparation.
 
-No registry publisher or external-agent workflow is configured in this preparation. Registry update checks and the `update`, `--update`, and `upgrade` commands are disabled while the package is private. The Codex marketplace catalog stays empty until the fork URL is supplied; use the direct MCP registration above. A GitHub repository name, owner, and publication decision must be supplied separately.
+No npm registry publisher or external-agent workflow is configured. Registry update checks and the `update`, `--update`, and `upgrade` commands are disabled while the package is private. Use direct MCP registration above; the Codex marketplace catalog has no installable entry. Updates come from this GitHub fork and require rebuilding locally.
 
 繁體中文說明：[README.zh-TW.md](README.zh-TW.md).

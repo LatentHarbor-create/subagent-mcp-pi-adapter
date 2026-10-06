@@ -2,9 +2,11 @@
 
 讓 Codex 透過本機 MCP 服務使用 Pi 工作代理。Pi 在獨立的 RPC 程序中執行，可在同一代理內接收後續訊息；Codex 原生子代理仍是獨立通道。
 
-這是 [Heretyc/subagent-mcp](https://github.com/Heretyc/subagent-mcp) 的 Apache-2.0 衍生版本。請保留 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和修改聲明。目前套件設為 `private: true`，發布資訊尚待倉庫擁有者決定。
+這是 [Heretyc/subagent-mcp](https://github.com/Heretyc/subagent-mcp) 的 Apache-2.0 衍生版本。請保留 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和修改聲明。GitHub 原始碼位於 [LatentHarbor-create/subagent-mcp-pi-adapter](https://github.com/LatentHarbor-create/subagent-mcp-pi-adapter)。`private: true` 只防止發布到 npm，不會阻止建置或執行。
 
 個人路徑已改成通用範例，原本機提交保留在發布目錄外；發布分支使用通用署名。詳見 [PRIVACY.md](PRIVACY.md)。
+
+**使用前請填入自己的設定。** [CONFIGURATION.md](CONFIGURATION.md) 列出必填路徑、Pi 模型與登入、codemode、可選禁用目錄及設定缺失的症狀。範例不是可直接沿用的個人配置；原使用者的憑證和私人目錄規則不會隨原始碼提供。
 
 ## 主要設定
 
@@ -23,12 +25,16 @@
 ```powershell
 npm install -g @earendil-works/pi-coding-agent@1.0.0
 pi --version
+git clone https://github.com/LatentHarbor-create/subagent-mcp-pi-adapter.git
+cd subagent-mcp-pi-adapter
 npm ci --ignore-scripts
 npm run build
 npm run test:pi
 ```
 
 最後三條命令在本專案目錄執行。再將 [examples/codex-config.toml](examples/codex-config.toml) 的程式路徑換成你的絕對路徑，加入 Codex MCP 設定；完成後重新啟動宿主。若已有同名服務，先確認原本設定。
+
+完整 `npm test` 含 Git 歷史檢查，需在 Git checkout 執行。解壓 ZIP 可以建置並執行 `npm run test:pi`。
 
 ## 每個新會話的 Pi 選擇
 
