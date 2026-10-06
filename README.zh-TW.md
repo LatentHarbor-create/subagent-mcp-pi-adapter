@@ -1,3 +1,5 @@
+[![English](https://img.shields.io/badge/Language-English-6e7781?style=for-the-badge)](README.md) [![繁體中文](https://img.shields.io/badge/Language-%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87-0969da?style=for-the-badge)](README.zh-TW.md)
+
 # subagent-mcp Pi adapter
 
 讓 Codex 透過本機 MCP 服務使用 Pi 工作代理。Pi 在獨立的 RPC 程序中執行，可在同一代理內接收後續訊息；Codex 原生子代理仍是獨立通道。

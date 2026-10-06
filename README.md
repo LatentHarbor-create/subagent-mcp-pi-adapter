@@ -1,4 +1,6 @@
 <!-- Modified for the subagent-mcp Pi adapter fork. -->
+[![English](https://img.shields.io/badge/Language-English-0969da?style=for-the-badge)](README.md) [![繁體中文](https://img.shields.io/badge/Language-%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87-6e7781?style=for-the-badge)](README.zh-TW.md)
+
 # subagent-mcp Pi adapter
 
 Pi workers for Codex through a local MCP stdio server. The adapter keeps a Pi RPC process alive across messages, applies the shared permission bridge, and reports completion after the Pi session settles. Codex native subagents remain an independent channel.
@@ -102,4 +104,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). [Inherited engine documentation](README.
 
 No npm registry publisher or external-agent workflow is configured. Registry update checks and the `update`, `--update`, and `upgrade` commands are disabled while the package is private. Use direct MCP registration above; the Codex marketplace catalog has no installable entry. Updates come from this GitHub fork and require rebuilding locally.
 
-繁體中文說明：[README.zh-TW.md](README.zh-TW.md).
