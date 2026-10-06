@@ -2,7 +2,15 @@
 
 # subagent-mcp Pi adapter
 
-讓 Codex 透過本機 MCP 服務使用 Pi 工作代理。Pi 在獨立的 RPC 程序中執行，可在同一代理內接收後續訊息；Codex 原生子代理仍是獨立通道。
+**這是 `subagent-mcp` 面向 Codex + Pi 的專用分支，為「讓 Pi 成為 Codex 子代理」做定向整合與優化。**
+
+[上游主專案](https://github.com/Heretyc/subagent-mcp) 提供支援多種宿主與代理供應商的通用 MCP 框架。本分支聚焦於 **Codex + Pi** 的使用方式，主要調整包括：
+
+- **固定使用 Pi 委派：** MCP 僅啟動 `pi / pi-balanced / max`，不切換到上游的 `codex`、`claude` 或 `api` 代理供應商。
+- **完善 Pi 1.0.0 RPC 流程：** 修正完成、排隊、錯誤與中止判斷；後續訊息可延續同一 Pi 工作代理，並接入共用權限橋接。
+- **分開控制各種代理通道：** Pi AUTO / ON / OFF 與 MCP 編排各自獨立，編排預設 OFF；Codex 原生子代理仍依 Codex 和專案規則使用。
+
+如果你的目標是讓 Codex 搭配 Pi 工作代理，可以使用此分支。以下說明以本分支的行為與安裝需求為準。
 
 這是 [Heretyc/subagent-mcp](https://github.com/Heretyc/subagent-mcp) 的 Apache-2.0 衍生版本。請保留 [LICENSE](LICENSE)、[NOTICE](NOTICE) 和修改聲明。GitHub 原始碼位於 [LatentHarbor-create/subagent-mcp-pi-adapter](https://github.com/LatentHarbor-create/subagent-mcp-pi-adapter)。`private: true` 只防止發布到 npm，不會阻止建置或執行。
 

@@ -3,7 +3,15 @@
 
 # subagent-mcp Pi adapter
 
-Pi workers for Codex through a local MCP stdio server. The adapter keeps a Pi RPC process alive across messages, applies the shared permission bridge, and reports completion after the Pi session settles. Codex native subagents remain an independent channel.
+**This is the Pi-focused branch of `subagent-mcp`, tailored for using Pi as a subagent in Codex.** It builds on the upstream MCP framework with targeted Pi integration and workflow changes.
+
+The [upstream project](https://github.com/Heretyc/subagent-mcp) provides a general framework for multiple assistant hosts and agent providers. This branch focuses on **Codex + Pi**, with these changes:
+
+- **Fixed Pi delegation:** MCP launches use only `pi / pi-balanced / max`, without falling back to the upstream `codex`, `claude`, or `api` agent providers.
+- **Pi 1.0.0 RPC handling:** completion, queued input, errors, and aborts are handled explicitly; follow-up messages reuse the same Pi worker, with the shared permission bridge.
+- **Independent controls:** Pi AUTO / ON / OFF is separate from MCP orchestration, which defaults OFF. Codex native subagents remain available under Codex and project rules.
+
+Use this fork when you want Pi workers alongside Codex. The sections below describe this branch's behavior and installation requirements.
 
 This is an Apache-2.0 derivative of [Heretyc/subagent-mcp](https://github.com/Heretyc/subagent-mcp). See [LICENSE](LICENSE), [NOTICE](NOTICE), and [MODIFICATIONS.md](MODIFICATIONS.md). GitHub source: [LatentHarbor-create/subagent-mcp-pi-adapter](https://github.com/LatentHarbor-create/subagent-mcp-pi-adapter). `private: true` prevents npm registry publication; it does not prevent building or running the adapter.
 
