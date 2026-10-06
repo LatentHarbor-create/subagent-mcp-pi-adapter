@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
@@ -28,6 +29,8 @@ const preloadPath = join(repoRoot, "test", "fixtures", "fake-ruleset-preload.cjs
 const fixtureTablePath = join(repoRoot, "test", "fixtures", "ruleset-routing-table.fixture.json");
 
 const GRACE_MS = 600;
+// Allow slower Windows mock-process startup without changing the grace window.
+const MCP_RESPONSE_TIMEOUT_MS = process.platform === "win32" ? 10000 : 4000;
 const CE_RANK1 = { provider: "claude", model: "sonnet", effort: "medium" };
 const CE_RANK2 = { provider: "codex", model: "gpt-5.5", effort: "xhigh" };
 
@@ -167,7 +170,7 @@ function createMcpSession(entrypoint, options = {}) {
       pending.set(id, { resolve: resolveResponse, reject: rejectResponse });
     });
     child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", id, method, params })}\n`);
-    return withTimeout(response, 4000, `${method} response`, () => `stderr=${stderr}`);
+    return withTimeout(response, MCP_RESPONSE_TIMEOUT_MS, `${method} response`, () => `stderr=${stderr}`);
   }
 
   function notify(method, params = {}) {

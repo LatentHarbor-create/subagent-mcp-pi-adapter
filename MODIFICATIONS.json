@@ -340,6 +340,10 @@
       "notice": "Modified for the subagent-mcp Pi adapter fork."
     },
     {
+      "path": "test/claude-session-limit.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
       "path": "test/cli-args.test.mjs",
       "notice": "Modified for the subagent-mcp Pi adapter fork."
     },
