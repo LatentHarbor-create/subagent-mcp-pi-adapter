@@ -3,6 +3,14 @@
   "reference_revision": "58a746130af9800508c9d5fe06717cdc88757394",
   "modified_files": [
     {
+      "path": "docs/spec/dev-loop/init-registry-and-update.md",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
+      "path": "test/setup-wire.test.mjs",
+      "notice": "Modified for the subagent-mcp Pi adapter fork."
+    },
+    {
       "path": ".agents/plugins/marketplace.json",
       "notice": "Modified for the subagent-mcp Pi adapter fork."
     },

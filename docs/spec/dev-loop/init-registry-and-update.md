@@ -1,3 +1,4 @@
+<!-- Modified for the subagent-mcp Pi adapter fork. -->
 # Init Registry And Update
 
 Status: normative. Documents the v3.1.0 init registry and auto-update behavior
@@ -83,9 +84,10 @@ registry-sourced strings into injected output. Checks are disabled by
 Pending update notices are throttled by session or by a 12 hour emit interval.
 The registry check itself is throttled to once per 24 hours.
 
-`setup` asks `Enable auto-update? [Y/n]` unless the registry already contains an
-`autoUpdate` key. The default is yes. `--unattended` and non-TTY setup both
-enable it without prompting. The choice is persisted in the registry
+`setup` asks `Enable auto-update? [y/N]` unless the registry already contains an
+`autoUpdate` key. The default is no; only an explicit yes enables it.
+`--unattended` and non-TTY setup both leave it disabled without prompting.
+The choice is persisted in the registry
 `autoUpdate` flag.
 
 ## Context-Coaching Setup Prompts
@@ -175,7 +177,7 @@ missing or out-of-date managed blocks; otherwise it is `PASS`.
 | Flow | Non-TTY behavior |
 |---|---|
 | `setup` init scope | Defaults to `global`. |
-| `setup` auto-update | Defaults to enabled. |
+| `setup` auto-update | Defaults to disabled. |
 | `setup` context coaching | Defaults to enabled (`contextCoaching: true`), no prompt. |
 | `setup` auto-compact reconciliation | Writes Claude Code `settings.json` `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = "90"` without prompting; emits restart notice. |
 | update missing or empty registry | Runs global init without prompting. |

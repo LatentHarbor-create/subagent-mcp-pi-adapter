@@ -1099,17 +1099,17 @@ export async function ensureSetupAutoUpdate(
   const home = opts.home ?? homedir();
   if (initRegistryHasAutoUpdate(home)) return readInitRegistry(home).autoUpdate;
   const tty = opts.isTTY ?? process.stdin.isTTY;
-  let enabled = true;
+  let enabled = false;
   if (opts.unattended) {
-    opts.log?.("Auto-update: unattended setup, defaulting to enabled.");
+    opts.log?.("Auto-update: unattended setup, defaulting to disabled.");
   } else if (!tty) {
-    opts.log?.("Auto-update: non-TTY setup, defaulting to enabled.");
+    opts.log?.("Auto-update: non-TTY setup, defaulting to disabled.");
   } else {
     for (;;) {
-      const answer = await askLine(opts, "Enable auto-update? [Y/n] ");
-      if (answer === "" || answer === "y" || answer === "yes") break;
-      if (answer === "n" || answer === "no") {
-        enabled = false;
+      const answer = await askLine(opts, "Enable auto-update? [y/N] ");
+      if (answer === "" || answer === "n" || answer === "no") break;
+      if (answer === "y" || answer === "yes") {
+        enabled = true;
         break;
       }
       opts.log?.("Enter y or n.");

@@ -1,3 +1,4 @@
+// Modified for the subagent-mcp Pi adapter fork.
 /**
  * setup-wire.test.mjs — Unit tests for the vendor-agnostic wireMcpServer
  * driver policy in dist/setup.js, with injected ExecDeps fakes.
@@ -375,16 +376,16 @@ await (async () => {
     const home = mkdtempSync(join(tmpdir(), "wire-home-"));
     try {
       const lines = [];
-      assert.equal(await ensureSetupAutoUpdate({ home, unattended: true, log: (line) => lines.push(line) }), true);
-      assert.equal(readInitRegistry(home).autoUpdate, true);
-      assert.deepEqual(lines, ["Auto-update: unattended setup, defaulting to enabled."]);
+      assert.equal(await ensureSetupAutoUpdate({ home, unattended: true, log: (line) => lines.push(line) }), false);
+      assert.equal(readInitRegistry(home).autoUpdate, false);
+      assert.deepEqual(lines, ["Auto-update: unattended setup, defaulting to disabled."]);
     } finally {
       rmSync(home, { recursive: true, force: true });
     }
-    console.log("  PASS: setup auto-update: unattended defaults enabled and persists");
+    console.log("  PASS: setup auto-update: unattended defaults disabled and persists");
     passed++;
   } catch (e) {
-    console.error("  FAIL: setup auto-update: unattended defaults enabled and persists");
+    console.error("  FAIL: setup auto-update: unattended defaults disabled and persists");
     console.error(`        ${e.message}`);
     failed++;
   }
@@ -394,9 +395,11 @@ await (async () => {
   try {
     const home = mkdtempSync(join(tmpdir(), "wire-home-"));
     try {
-      writeInitRegistry({ globalInit: false, autoUpdate: false, entries: [] }, home);
-      assert.equal(await ensureSetupAutoUpdate({ home, unattended: true }), false);
-      assert.equal(readInitRegistry(home).autoUpdate, false);
+      for (const existing of [false, true]) {
+        writeInitRegistry({ globalInit: false, autoUpdate: existing, entries: [] }, home);
+        assert.equal(await ensureSetupAutoUpdate({ home, unattended: true }), existing);
+        assert.equal(readInitRegistry(home).autoUpdate, existing);
+      }
     } finally {
       rmSync(home, { recursive: true, force: true });
     }
@@ -408,6 +411,30 @@ await (async () => {
     failed++;
   }
 })();
+
+for (const { name, options, expected } of [
+  { name: "non-TTY defaults disabled", options: { isTTY: false }, expected: false },
+  { name: "interactive Enter defaults disabled", options: { isTTY: true, input: Readable.from(["\n"]) }, expected: false },
+  { name: "interactive no keeps disabled", options: { isTTY: true, input: Readable.from(["no\n"]) }, expected: false },
+  { name: "interactive yes opts in", options: { isTTY: true, input: Readable.from(["yes\n"]) }, expected: true },
+]) {
+  const home = mkdtempSync(join(tmpdir(), "wire-home-"));
+  try {
+    const prompts = [];
+    const output = new Writable({ write(chunk, _encoding, done) { prompts.push(chunk.toString()); done(); } });
+    assert.equal(await ensureSetupAutoUpdate({ home, ...options, output }), expected);
+    assert.equal(readInitRegistry(home).autoUpdate, expected);
+    if (options.isTTY) assert.deepEqual(prompts, ["Enable auto-update? [y/N] "]);
+    console.log(`  PASS: setup auto-update: ${name}`);
+    passed++;
+  } catch (e) {
+    console.error(`  FAIL: setup auto-update: ${name}`);
+    console.error(`        ${e.message}`);
+    failed++;
+  } finally {
+    rmSync(home, { recursive: true, force: true });
+  }
+}
 
 // ---------------------------------------------------------------------------
 // claudeUserSettingsPath — the real settings-file resolver the auto-compact
